@@ -94,4 +94,78 @@ router.put("/settings", authMiddleware, async (req, res) => {
   }
 });
 
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User with this email does not exist" });
+    }
+
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // Dummy email log if nodemailer not configured properly
+    console.log(`[Email] Password reset link for ${email}: ${resetUrl}`);
+
+    if (process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_EMAIL,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+
+      const mailOptions = {
+        from: process.env.SMTP_EMAIL,
+        to: user.email,
+        subject: "CareerOS AI Password Reset",
+        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+          Please click on the following link, or paste this into your browser to complete the process:\n\n
+          ${resetUrl}\n\n
+          If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+      };
+
+      await transporter.sendMail(mailOptions);
+    }
+
+    res.json({ message: "Password reset link sent to your email (check console if testing locally)" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Password reset token is invalid or has expired" });
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: "Password has been successfully updated. You can now log in." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     username: { type: String, unique: true, sparse: true, trim: true, lowercase: true },
     githubUsername: { type: String, trim: true },
     linkedinUrl: { type: String, trim: true },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

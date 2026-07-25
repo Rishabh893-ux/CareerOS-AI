@@ -2,39 +2,42 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Lock, Mail, Sparkles, AlertCircle } from "lucide-react";
-import { saveToken } from "@/app/api";
+import { Mail, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const BACKEND_URL = "https://careeros-backend-k7r1.onrender.com/api";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!email) return;
     setError("");
+    setMessage("");
     setLoading(true);
 
     try {
-      const res = await fetch("https://careeros-backend-k7r1.onrender.com/api/auth/login", {
+      const res = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
+      
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || "Login failed");
+        throw new Error(data.error || "Failed to send reset link");
       }
 
-      saveToken(data.token);
-      router.push("/");
+      setMessage(data.message || "Password reset link sent to your email!");
+      setEmail("");
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Something went wrong"); }
+      if (err instanceof Error) {
+        setError(err.message || "Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
@@ -47,29 +50,36 @@ export default function LoginPage() {
       <div className="absolute bottom-[20%] right-[20%] w-[40%] h-[40%] rounded-full bg-purple-500/5 blur-[140px]" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Brand logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-xl shadow-blue-500/20 text-xl mb-4">
             C
           </div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-            Welcome to CareerOS AI
+            Forgot Password
           </h2>
-          <p className="text-sm text-slate-400 mt-1">AI-Powered Career Intelligence Suite</p>
+          <p className="text-sm text-slate-400 mt-1 text-center">
+            Enter your email to receive a password reset link
+          </p>
         </div>
 
-        {/* Form panel */}
         <div className="glass-panel p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
               <Sparkles size={16} className="text-blue-400" />
-              <span>Login to your Account</span>
+              <span>Reset your password</span>
             </h3>
 
             {error && (
               <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 <AlertCircle size={18} className="shrink-0" />
                 <span>{error}</span>
+              </div>
+            )}
+            
+            {message && (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                <CheckCircle2 size={18} className="shrink-0" />
+                <span>{message}</span>
               </div>
             )}
 
@@ -90,28 +100,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                Password
-              </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
-                <Lock size={16} className="text-slate-400" />
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
-                  required
-                />
-              </div>
-              <div className="flex justify-end mt-1">
-                <Link href="/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 transition-all">
-                  Forgot Password?
-                </Link>
-              </div>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -120,15 +108,15 @@ export default function LoginPage() {
               {loading ? (
                 <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
               ) : (
-                "Log In"
+                "Send Reset Link"
               )}
             </button>
           </form>
 
           <div className="mt-8 text-center text-sm text-slate-400 border-t border-white/5 pt-6">
-            New to CareerOS?{" "}
-            <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-all">
-              Create an account
+            Remembered your password?{" "}
+            <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition-all">
+              Log in
             </Link>
           </div>
         </div>

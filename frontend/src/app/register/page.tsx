@@ -11,12 +11,25 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) return;
+    if (!name || !email || !password || !confirmPassword) return;
+    
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    if (!agreeTerms) {
+      setError("You must agree to the Terms and Conditions");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
@@ -125,6 +138,37 @@ export default function RegisterPage() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Confirm Password
+              </label>
+              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
+                <Lock size={16} className="text-slate-400" />
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 cursor-pointer"
+                required
+              />
+              <label htmlFor="terms" className="text-xs text-slate-400 cursor-pointer">
+                I agree to the <Link href="#" className="text-blue-400 hover:underline">Terms and Conditions</Link>
+              </label>
             </div>
 
             <button
