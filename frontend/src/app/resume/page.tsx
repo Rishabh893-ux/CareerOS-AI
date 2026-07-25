@@ -126,7 +126,7 @@ export default function ResumePage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("http://localhost:5001/api/resume/upload", {
+      const res = await fetch("https://careeros-backend-k7r1.onrender.com/api/resume/upload", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -176,7 +176,7 @@ export default function ResumePage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch("http://localhost:5001/api/resume/ats-check", {
+      const res = await fetch("https://careeros-backend-k7r1.onrender.com/api/resume/ats-check", {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

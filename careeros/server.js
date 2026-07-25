@@ -19,7 +19,7 @@ const app = express();
 
 // ── CORS ──
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"],
+  origin: ["http://localhost:3000", "http://localhost:3001", process.env.FRONTEND_URL, "https://careeros-ai-phi.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
