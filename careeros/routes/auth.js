@@ -110,7 +110,7 @@ router.post("/forgot-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendUrl = "https://careeros-ai-phi.vercel.app";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     // Dummy email log if nodemailer not configured properly
@@ -136,9 +136,10 @@ router.post("/forgot-password", async (req, res) => {
       };
 
       await transporter.sendMail(mailOptions);
+      res.json({ message: "Password reset link sent to your email!" });
+    } else {
+      res.json({ message: `Testing Mode: No email server configured. Your reset link is: ${resetUrl}` });
     }
-
-    res.json({ message: "Password reset link sent to your email (check console if testing locally)" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
