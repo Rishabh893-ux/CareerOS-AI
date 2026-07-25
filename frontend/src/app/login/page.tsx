@@ -115,7 +115,18 @@ export default function LoginPage() {
               {message && (
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm break-all">
                   <CheckCircle2 size={18} className="shrink-0" />
-                  <span>{message}</span>
+                  <span>
+                    {message.includes("http") ? (
+                      <>
+                        {message.split("http")[0]}
+                        <a href={`http${message.split("http")[1]}`} className="underline font-bold text-blue-400 hover:text-blue-300">
+                          {`http${message.split("http")[1]}`}
+                        </a>
+                      </>
+                    ) : (
+                      message
+                    )}
+                  </span>
                 </div>
               )}
 
