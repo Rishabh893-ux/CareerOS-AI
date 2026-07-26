@@ -293,10 +293,7 @@ router.delete("/", async (req, res) => {
   try {
     const profile = await Profile.findOneAndUpdate(
       { user: req.userId },
-      { 
-        $unset: { resumeUrl: "", resumeRawText: "", resumeExtractedSkills: "", resumeLastParsedAt: "", phone: "", location: "", portfolioUrl: "" },
-        $set: { skills: [], education: [], experience: [], certifications: [], projects: [], careerGoal: "" }
-      },
+      { $unset: { resumeUrl: "", resumeRawText: "", resumeExtractedSkills: "", resumeLastParsedAt: "" } },
       { new: true }
     );
     res.json({ message: "Resume removed successfully", profile });
