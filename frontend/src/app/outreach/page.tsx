@@ -8,7 +8,7 @@ export default function OutreachPage() {
   const [recipientName, setRecipientName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [platform, setPlatform] = useState<"LinkedIn" | "Email">("LinkedIn");
+  const [platform, setPlatform] = useState<"LinkedIn" | "Email">("Email");
   const [context, setContext] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
@@ -59,7 +59,7 @@ export default function OutreachPage() {
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">Networking Assistant</h1>
             <p className="text-sm text-slate-400 mt-2 max-w-lg leading-relaxed">
-              Generate highly personalized, non-spammy outreach messages based on your real resume data. Use this for cold emails or LinkedIn connection requests.
+              Generate highly personalized, non-spammy outreach messages based on your real resume data. Use this for cold emails.
             </p>
           </div>
         </div>
@@ -94,17 +94,7 @@ export default function OutreachPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Platform</label>
-                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                  <button type="button" onClick={() => setPlatform("LinkedIn")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${platform === 'LinkedIn' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                    LinkedIn
-                  </button>
-                  <button type="button" onClick={() => setPlatform("Email")} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${platform === 'Email' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                    Cold Email
-                  </button>
-                </div>
-              </div>
+              {/* Platform toggle removed - defaulting to Email */}
 
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">Additional Context (Optional)</label>
