@@ -44,6 +44,7 @@ export default function ResumePage() {
   
   // States for main resume parser
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -146,6 +147,33 @@ export default function ResumePage() {
     } finally {
       setUploading(false);
       setUploadProgress("");
+    }
+  };
+
+  const handleRemoveResume = async () => {
+    if (!confirm("Are you sure you want to remove your saved resume?")) return;
+    setRemoving(true);
+    setError("");
+    setSuccessMsg("");
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch("https://careeros-backend-k7r1.onrender.com/api/resume", {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to remove resume");
+      
+      setProfile(data.profile);
+      setSuccessMsg("✅ Saved resume removed successfully.");
+      clearFile();
+      loadProfile();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "Failed to remove resume.");
+      }
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -342,11 +370,20 @@ export default function ResumePage() {
 
           {/* Status */}
           {profile?.resumeLastParsedAt && (
-            <div className="p-3 bg-emerald-500/5 border border-emerald-500/15 rounded-xl">
-              <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">✅ Profile Resume Active</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Parsed: {new Date(profile.resumeLastParsedAt).toLocaleDateString()} · {profile.resumeExtractedSkills?.length || 0} skills extracted
-              </p>
+            <div className="p-3 bg-emerald-500/5 border border-emerald-500/15 rounded-xl flex items-start justify-between">
+              <div>
+                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">✅ Profile Resume Active</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Parsed: {new Date(profile.resumeLastParsedAt).toLocaleDateString()} · {profile.resumeExtractedSkills?.length || 0} skills extracted
+                </p>
+              </div>
+              <button 
+                onClick={handleRemoveResume} 
+                disabled={removing}
+                className="text-[10px] bg-red-500/10 hover:bg-red-500/20 text-red-400 px-2 py-1 rounded-md transition-colors disabled:opacity-50"
+              >
+                {removing ? "Removing..." : "Remove"}
+              </button>
             </div>
           )}
 

@@ -288,6 +288,20 @@ Resume text:
   }
 });
 
+// ── DELETE /api/resume — remove parsed resume from profile ──
+router.delete("/", async (req, res) => {
+  try {
+    const profile = await Profile.findOneAndUpdate(
+      { user: req.userId },
+      { $unset: { resumeUrl: "", resumeRawText: "", resumeExtractedSkills: "", resumeLastParsedAt: "" } },
+      { new: true }
+    );
+    res.json({ message: "Resume removed successfully", profile });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── POST /api/resume/ats-check ──
 router.post("/ats-check", upload.single("resume"), async (req, res) => {
   try {
