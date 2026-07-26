@@ -85,6 +85,9 @@ async function callGemini(feature, prompt, options = {}) {
 
     if (!response.ok) {
       const errText = await response.text();
+      if (response.status === 429) {
+        throw new Error("API Rate Limit Reached! Please wait about 1 minute and try again.");
+      }
       throw new Error(`Gemini API error ${response.status}: ${errText}`);
     }
 

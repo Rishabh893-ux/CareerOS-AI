@@ -81,6 +81,9 @@ async function extractTextViaGeminiVision(buffer, mimeType) {
 
   if (!res.ok) {
     const errText = await res.text();
+    if (res.status === 429) {
+      throw new Error("API Rate Limit Reached! Please wait about 1 minute and try uploading again.");
+    }
     throw new Error(`Gemini Vision error ${res.status}: ${errText}`);
   }
 
