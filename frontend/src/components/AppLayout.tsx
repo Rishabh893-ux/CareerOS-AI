@@ -44,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [chatMessages]);
 
   useEffect(() => {
-    const publicPaths = ["/login", "/register"];
+    const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
     const token = localStorage.getItem("token");
     if (publicPaths.includes(pathname)) { setIsAuthenticated(true); return; }
     if (!token) { router.push("/login"); } else { 
@@ -104,7 +104,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (["/login", "/register"].includes(pathname) || pathname.startsWith("/p/")) {
+  if (["/login", "/register", "/forgot-password", "/reset-password"].includes(pathname) || pathname.startsWith("/p/")) {
     return <div className="min-h-screen flex flex-col">{children}</div>;
   }
 
