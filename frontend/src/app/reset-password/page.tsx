@@ -16,7 +16,7 @@ function ResetPasswordForm() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const BACKEND_URL = "https://careeros-backend-k7r1.onrender.com/api";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

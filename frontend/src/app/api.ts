@@ -1,5 +1,4 @@
-const API_BASE = "https://careeros-backend-k7r1.onrender.com/api";
-
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 

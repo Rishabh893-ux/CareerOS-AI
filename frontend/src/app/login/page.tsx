@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
 
-  const BACKEND_URL = "https://careeros-backend-k7r1.onrender.com/api";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

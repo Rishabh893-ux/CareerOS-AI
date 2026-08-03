@@ -40,7 +40,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     if (!username) return;
     
-    fetch(`https://careeros-backend-k7r1.onrender.com/api/profile/public/${username}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/profile/public/${username}`)
       .then(res => {
         if (!res.ok) throw new Error("Portfolio not found");
         return res.json();
