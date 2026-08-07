@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+let _apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+if (process.env.NEXT_PUBLIC_API_URL && !_apiBase.endsWith('/api')) {
+  _apiBase = _apiBase.replace(/\/$/, "") + "/api";
+}
+export const API_BASE = _apiBase;
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 

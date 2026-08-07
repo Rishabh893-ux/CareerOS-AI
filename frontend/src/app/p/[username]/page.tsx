@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { GitBranch, Briefcase, Mail, ExternalLink, Code, BookOpen, User, Star, LayoutDashboard, MapPin, Globe, Award, Calendar } from "lucide-react";
 import Link from "next/link";
+import { API_BASE } from "@/app/api";
 
 interface PortfolioData {
   user: {
@@ -40,7 +41,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     if (!username) return;
     
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/profile/public/${username}`)
+    fetch(`${API_BASE}/profile/public/${username}`)
       .then(res => {
         if (!res.ok) throw new Error("Portfolio not found");
         return res.json();

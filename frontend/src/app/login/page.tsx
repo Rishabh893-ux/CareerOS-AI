@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
-import { saveToken } from "@/app/api";
+import { API_BASE, saveToken } from "@/app/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const BACKEND_URL = API_BASE;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
