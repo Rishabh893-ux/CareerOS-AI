@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
+import { API_BASE } from "@/app/api";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -16,7 +17,7 @@ function ResetPasswordForm() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const BACKEND_URL = API_BASE;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
