@@ -17,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth, API_BASE } from "@/app/api";
 
 interface Profile {
   careerGoal: string;
@@ -127,7 +127,7 @@ export default function ResumePage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/resume/upload`, {
+      const res = await fetch(`${API_BASE}/resume/upload`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -157,7 +157,7 @@ export default function ResumePage() {
     setSuccessMsg("");
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/resume`, {
+      const res = await fetch(`${API_BASE}/resume`, {
         method: "DELETE",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -204,7 +204,7 @@ export default function ResumePage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/resume/ats-check`, {
+      const res = await fetch(`${API_BASE}/resume/ats-check`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
