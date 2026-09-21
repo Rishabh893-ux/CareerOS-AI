@@ -13,13 +13,21 @@ export function DiagnosticReport({ atsResult, scoreColor }: DiagnosticReportProp
   const [showRawText, setShowRawText] = useState(false);
 
   return (
-    <div className="metric-card p-6 flex flex-col">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-          <Eye size={14} className="text-accent" />
+    <div className="premium-card p-6 flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+            <Eye size={16} className="text-accent" />
+          </div>
+          <div>
+            <span className="section-heading">Diagnostic Report</span>
+            <p className="text-[11px] text-muted mt-0.5">Match score, keywords &amp; suggestions</p>
+          </div>
         </div>
-        <span className="section-heading">Diagnostic Report</span>
+        {atsResult && <span className="premium-badge">AI Powered</span>}
       </div>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent mb-4" />
 
       {atsResult ? (
         <div className="flex-1 space-y-4 overflow-y-auto max-h-[340px] pr-1">

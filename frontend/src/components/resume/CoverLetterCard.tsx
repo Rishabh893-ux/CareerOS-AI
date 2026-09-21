@@ -49,13 +49,21 @@ export function CoverLetterCard() {
   return (
     <div className="grid md:grid-cols-2 gap-5">
       {/* Form */}
-      <div className="metric-card p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-            <FileText size={14} className="text-accent" />
+      <div className="premium-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+              <FileText size={16} className="text-accent" />
+            </div>
+            <div>
+              <span className="section-heading">Cover Letter Generator</span>
+              <p className="text-[11px] text-muted mt-0.5">Grounded in your real profile data</p>
+            </div>
           </div>
-          <span className="section-heading">Cover Letter Generator</span>
+          <span className="premium-badge">AI Powered</span>
         </div>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent mb-4" />
 
         <form onSubmit={handleGenerate} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -108,7 +116,7 @@ export function CoverLetterCard() {
       </div>
 
       {/* Result */}
-      <div className="metric-card flex flex-col overflow-hidden relative min-h-[400px] p-0">
+      <div className="premium-card flex flex-col overflow-hidden relative min-h-[400px] p-0">
         <div className="p-4 border-b border-line bg-surface-alt flex items-center justify-between shrink-0">
           <h3 className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-2">
             <FileText size={14} className="text-accent" /> Draft

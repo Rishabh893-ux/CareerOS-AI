@@ -36,18 +36,23 @@ export function ResumeParserCard({
   onRemoveResume,
 }: ResumeParserCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col gap-4">
+    <div className="premium-card p-6 flex flex-col gap-4">
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-            <FileText size={14} className="text-accent" />
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+              <FileText size={16} className="text-accent" />
+            </div>
+            <span className="section-heading">Resume Parser</span>
           </div>
-          <span className="section-heading">Resume Parser</span>
+          <span className="premium-badge">AI Powered</span>
         </div>
-        <p className="text-xs text-muted mt-1 leading-relaxed">
+        <p className="text-xs text-muted mt-2 leading-relaxed">
           Upload to save to your profile. AI extracts your skills automatically.
         </p>
       </div>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent" />
 
       {/* Status */}
       {profile?.resumeLastParsedAt && (
