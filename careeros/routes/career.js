@@ -1,25 +1,21 @@
 const express = require("express");
-const Profile = require("../models/Profile");
 const authMiddleware = require("../middleware/auth");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
+const { isStale } = require("../services/cacheUtils");
+const { findProfileOr404 } = require("../services/profileUtils");
 
 const router = express.Router();
 router.use(authMiddleware);
 
-const CACHE_TTL_HOURS = parseInt(process.env.GEMINI_CACHE_TTL_HOURS || "24", 10);
-
 router.get("/score", async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === "true";
-    const profile = await Profile.findOne({ user: req.userId });
-    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    const profile = await findProfileOr404(req.userId, res);
+    if (!profile) return;
 
     const cached = profile.careerScore;
-    const isStale =
-      !cached?.computedAt ||
-      Date.now() - new Date(cached.computedAt).getTime() > CACHE_TTL_HOURS * 60 * 60 * 1000;
 
-    if (cached && !forceRefresh && !isStale) {
+    if (cached && !forceRefresh && !isStale(cached.computedAt)) {
       return res.json({ ...cached.toObject(), fromCache: true });
     }
 
@@ -48,7 +44,7 @@ Return ONLY JSON in this exact shape:
   "weaknesses": ["...", "..."]
 }`;
 
-    const result = await callGemini("career_score", prompt, {
+    const result = await callAI("career_score", prompt, {
       jsonSchemaHint: true,
       fallbackData: cached ? cached.toObject() : null,
     });

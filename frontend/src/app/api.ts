@@ -1,4 +1,4 @@
-let _apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+let _apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 if (process.env.NEXT_PUBLIC_API_URL && !_apiBase.endsWith('/api')) {
   _apiBase = _apiBase.replace(/\/$/, "") + "/api";
 }
@@ -18,12 +18,14 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
       ...options,
       headers,
     });
-  } catch (networkErr: any) {
+  } catch (networkErr: unknown) {
     // Network-level failure — backend not running or CORS issue
-    if (networkErr.message?.includes("fetch") || networkErr.message?.includes("network") || networkErr.name === "TypeError") {
+    const message = networkErr instanceof Error ? networkErr.message : "";
+    const isNetworkFailure = networkErr instanceof TypeError || message.includes("fetch") || message.includes("network");
+    if (isNetworkFailure) {
       throw new Error("Cannot reach the server. Make sure the backend is running on port 5001.");
     }
-    throw new Error(networkErr.message || "Network error");
+    throw new Error(message || "Network error");
   }
 
   if (res.status === 401) {
@@ -34,6 +36,9 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     throw new Error("Session expired. Please log in again.");
   }
 
+  // Return shape is caller-defined - this is a generic HTTP client, not a
+  // typed endpoint wrapper. Callers narrow/cast at the call site.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let data: any;
   try {
     data = await res.json();

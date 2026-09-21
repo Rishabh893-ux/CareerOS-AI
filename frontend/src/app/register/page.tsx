@@ -57,101 +57,97 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08090c] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background radial highlights */}
-      <div className="absolute top-[20%] left-[20%] w-[40%] h-[40%] rounded-full bg-blue-500/5 blur-[140px]" />
-      <div className="absolute bottom-[20%] right-[20%] w-[40%] h-[40%] rounded-full bg-purple-500/5 blur-[140px]" />
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md relative z-10">
         {/* Brand logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-xl shadow-blue-500/20 text-xl mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast text-xl mb-4">
             C
           </div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+          <h2 className="font-heading text-2xl font-bold">
             Create an Account
           </h2>
-          <p className="text-sm text-slate-400 mt-1">Get started with CareerOS AI for free</p>
+          <p className="text-sm text-muted mt-1">Get started with CareerOS AI for free</p>
         </div>
 
         {/* Form panel */}
         <div className="glass-panel p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
-            <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
-              <Sparkles size={16} className="text-blue-400" />
+            <h3 className="text-lg font-semibold mb-1 flex items-center gap-2">
+              <Sparkles size={16} className="text-accent" />
               <span>Register</span>
             </h3>
 
             {error && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
                 <AlertCircle size={18} className="shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Full Name
               </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
-                <User size={16} className="text-slate-400" />
+              <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
+                <User size={16} className="text-muted" />
                 <input
                   type="text"
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Email Address
               </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
-                <Mail size={16} className="text-slate-400" />
+              <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
+                <Mail size={16} className="text-muted" />
                 <input
                   type="email"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Password
               </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
-                <Lock size={16} className="text-slate-400" />
+              <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
+                <Lock size={16} className="text-muted" />
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Confirm Password
               </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl px-4 py-3 focus-within:border-blue-500 transition-all">
-                <Lock size={16} className="text-slate-400" />
+              <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
+                <Lock size={16} className="text-muted" />
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-transparent text-sm w-full text-slate-100 placeholder-slate-500 focus:outline-none"
+                  className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
                   required
                 />
               </div>
@@ -163,30 +159,30 @@ export default function RegisterPage() {
                 id="terms"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="w-4 h-4 rounded border-white/20 bg-white/5 accent-blue-500 cursor-pointer"
+                className="w-4 h-4 rounded border-line bg-surface-alt accent-[var(--accent)] cursor-pointer"
                 required
               />
-              <label htmlFor="terms" className="text-xs text-slate-400 cursor-pointer">
-                I agree to the <Link href="#" className="text-blue-400 hover:underline">Terms and Conditions</Link>
+              <label htmlFor="terms" className="text-xs text-muted cursor-pointer">
+                I agree to the <Link href="#" className="text-accent hover:underline">Terms and Conditions</Link>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:shadow-lg hover:shadow-blue-500/20 transition-all cursor-pointer flex items-center justify-center"
+              className="btn-primary w-full py-3.5 flex items-center justify-center"
             >
               {loading ? (
-                <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                <span className="w-5 h-5 rounded-full border-2 border-accent-contrast/30 border-t-accent-contrast animate-spin"></span>
               ) : (
                 "Sign Up"
               )}
             </button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-slate-400 border-t border-white/5 pt-6">
+          <div className="mt-8 text-center text-sm text-muted border-t border-line pt-6">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition-all">
+            <Link href="/login" className="text-accent hover:opacity-80 font-semibold transition-all">
               Log in
             </Link>
           </div>

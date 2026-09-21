@@ -1,7 +1,7 @@
 const express = require("express");
 const InterviewSession = require("../models/InterviewSession");
 const authMiddleware = require("../middleware/auth");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -51,7 +51,7 @@ Return ONLY JSON in this shape:
 }
 Note: correctAnswer must be a single letter ("A", "B", "C", or "D") corresponding to index 0, 1, 2, or 3.`;
 
-      const result = await callGemini("interview_questions", prompt, { jsonSchemaHint: true });
+      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       sessionData.mcqQuestions = result.data.questions || [];
@@ -61,7 +61,7 @@ Note: correctAnswer must be a single letter ("A", "B", "C", or "D") correspondin
           ? `Generate exactly ${numQuestions} common HR interview questions for a fresher/internship candidate. Return ONLY JSON: { "questions": ["...", ...] }`
           : `Generate exactly ${numQuestions} technical interview questions on the topic "${topic || "general CS fundamentals"}" suitable for a B.Tech CSE internship candidate. Mix conceptual and applied questions. Return ONLY JSON: { "questions": ["...", ...] }`;
 
-      const result = await callGemini("interview_questions", prompt, { jsonSchemaHint: true });
+      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       sessionData.questions = result.data.questions || [];
@@ -93,11 +93,12 @@ router.post("/:id/feedback", async (req, res) => {
 
       session.mcqQuestions.forEach((q, index) => {
         const userAnswer = (answers[index] || "").trim().toUpperCase();
-        if (userAnswer === q.correctAnswer.toUpperCase()) {
+        const correctAnswer = (q.correctAnswer || "").trim().toUpperCase();
+        if (correctAnswer && userAnswer === correctAnswer) {
           score++;
         } else {
           improvementAreas.push(
-            `Question ${index + 1}: "${q.question}" - You answered "${userAnswer}", correct was "${q.correctAnswer}"`
+            `Question ${index + 1}: "${q.question}" - You answered "${userAnswer}", correct was "${correctAnswer || "unknown"}"`
           );
         }
       });
@@ -123,7 +124,7 @@ ${JSON.stringify(qa)}
 
 Return ONLY JSON: { "feedback": "2-4 sentence overall feedback", "improvementAreas": ["area1", "area2"] }`;
 
-      const result = await callGemini("mock_interview", prompt, { jsonSchemaHint: true });
+      const result = await callAI("mock_interview", prompt, { jsonSchemaHint: true });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       session.userAnswers = answers;

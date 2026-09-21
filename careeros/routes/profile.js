@@ -2,6 +2,7 @@ const express = require("express");
 const Profile = require("../models/Profile");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
+const { findProfileOr404 } = require("../services/profileUtils");
 
 const router = express.Router();
 
@@ -10,13 +11,13 @@ router.get("/public/:username", async (req, res) => {
   try {
     const user = await User.findOne({
       $or: [
-        { username: req.params.username },
+        { username: req.params.username.toLowerCase() },
         { _id: req.params.username.match(/^[0-9a-fA-F]{24}$/) ? req.params.username : null }
       ]
     }).select("name email githubUsername linkedinUrl");
     if (!user) return res.status(404).json({ error: "Portfolio not found" });
 
-    const profile = await Profile.findOne({ user: user._id }).select("education skills projects careerGoal experience certifications githubAnalysis location portfolioUrl");
+    const profile = await Profile.findOne({ user: user._id }).select("education skills projects careerGoal experience certifications githubAnalysis careerScore location portfolioUrl resumeUrl");
     if (!profile) return res.status(404).json({ error: "Profile not found" });
 
     res.json({
@@ -36,8 +37,8 @@ router.use(authMiddleware);
 
 router.get("/", async (req, res) => {
   try {
-    const profile = await Profile.findOne({ user: req.userId });
-    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    const profile = await findProfileOr404(req.userId, res);
+    if (!profile) return;
     res.json(profile);
   } catch (err) {
     res.status(500).json({ error: err.message });

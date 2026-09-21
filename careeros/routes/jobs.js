@@ -2,7 +2,7 @@ const express = require("express");
 const JobApplication = require("../models/JobApplication");
 const Profile = require("../models/Profile");
 const authMiddleware = require("../middleware/auth");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
 const { analyzeJobMatch } = require("../services/jobMatchService");
 
 const router = express.Router();
@@ -17,10 +17,18 @@ router.get("/", async (req, res) => {
 // Live job search endpoint (Adzuna Integration) - MUST be before /:id routes
 router.get("/search", async (req, res) => {
   try {
-    const what = req.query.what || "";
-    const where = req.query.where || "";
+    let what = req.query.what || "";
+    let where = req.query.where || "";
     const country = req.query.country || "in"; // default to India
     const page = req.query.page || 1;
+
+    // Adzuna's `where` is a geocoding filter, not a remote-work flag - "Remote"
+    // isn't a real place, so it silently returns zero results. Fold it into
+    // the keyword search instead, where it actually matches listings.
+    if (/\bremote\b/i.test(where)) {
+      what = `${what} remote`.trim();
+      where = where.replace(/\bremote\b/i, "").trim();
+    }
 
     const appId = process.env.ADZUNA_APP_ID;
     const apiKey = process.env.ADZUNA_API_KEY;
@@ -38,12 +46,13 @@ router.get("/search", async (req, res) => {
       throw new Error(`Adzuna API returned status ${response.status}`);
     }
 
+    const stripHtml = (str) => (str || "").replace(/<\/?[^>]+(>|$)/g, "");
     const data = await response.json();
     const formattedJobs = (data.results || []).map((j) => ({
-      title: j.title.replace(/<\/?[^>]+(>|$)/g, ""),
+      title: stripHtml(j.title) || "Untitled Role",
       company: j.company?.display_name || "Unknown Company",
       location: j.location?.display_name || where || "Remote",
-      description: j.description.replace(/<\/?[^>]+(>|$)/g, ""),
+      description: stripHtml(j.description),
       redirect_url: j.redirect_url,
       salary: j.salary_min ? `${j.salary_min} - ${j.salary_max || ""}` : "Not Disclosed",
     }));
@@ -90,12 +99,19 @@ router.post("/", async (req, res) => {
 });
 
 // Update a job (status, notes, etc.)
+const JOB_UPDATABLE_FIELDS = ["company", "role", "jobUrl", "status", "notes", "appliedOn", "jobDescription"];
+
 router.put("/:id", async (req, res) => {
   try {
+    const updates = {};
+    for (const field of JOB_UPDATABLE_FIELDS) {
+      if (field in req.body) updates[field] = req.body[field];
+    }
+
     const job = await JobApplication.findOneAndUpdate(
       { _id: req.params.id, user: req.userId },
-      { $set: req.body },
-      { new: true }
+      { $set: updates },
+      { new: true, runValidators: true }
     );
     if (!job) return res.status(404).json({ error: "Job not found" });
     res.json(job);

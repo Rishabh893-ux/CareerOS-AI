@@ -56,7 +56,7 @@ const profileSchema = new mongoose.Schema(
 
     careerGoal: { type: String }, // e.g. "Full Stack Developer", "AI Engineer"
 
-    // Cached AI analysis results - avoids re-calling Gemini on every dashboard load
+    // Cached AI analysis results - avoids re-calling Claude on every dashboard load
     careerScore: {
       score: Number,
       strengths: [String],
@@ -108,6 +108,18 @@ const profileSchema = new mongoose.Schema(
           title: String,
           description: String,
           resourceHint: String,
+        },
+      ],
+      computedAt: Date,
+    },
+
+    careerPath: {
+      targetRole: String,
+      ladder: [
+        {
+          title: String,
+          yearsRange: String,
+          description: String,
         },
       ],
       computedAt: Date,
