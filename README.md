@@ -1,38 +1,41 @@
 <div align="center">
   
   # 🚀 CareerOS AI
-  **AI-Powered Portfolio & Mock Prep Suite**
+  **AI-Powered Career Readiness Platform**
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-  [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+  [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
   [![Node.js](https://img.shields.io/badge/Node.js-Backend-green?logo=node.js)](https://nodejs.org/)
+  [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://careeros-ai-phi.vercel.app)
 
 </div>
 
 <br/>
 
-**CareerOS AI** is a production-ready, full-stack career development assistant designed for college students and job seekers. The platform aggregates student profiles (skills, projects, education), automates resume keyword parsing, reviews files against job descriptions (ATS scanning), connects to active vacancy portals, and conducts dynamic mock interviews (Open-ended or MCQ format) using the **Google Gemini API**.
+**CareerOS AI** is a full-stack career development platform for students and job seekers. It aggregates a candidate's profile (skills, projects, education, GitHub activity), automates resume parsing and ATS scoring against real job descriptions, runs AI-generated mock interviews (written or MCQ), tracks live job applications end-to-end, and publishes a shareable public portfolio page.
+
+**🔗 Live demo:** [careeros-ai-phi.vercel.app](https://careeros-ai-phi.vercel.app)
 
 ---
 
 ## 🛠️ Technology Stack & Architecture
 
-*   **Frontend Client**: React / Next.js 15, Tailwind CSS, Lucide icons, and Recharts/SVG vector dashboards.
-*   **Backend Server**: Node.js, Express, Multer (file middleware), and Mongoose (ODM).
-*   **Database**: MongoDB Atlas (Free M0 document cluster).
-*   **File Storage**: Cloudinary Free Tier (PDF resume host).
-*   **External Feeds**: GitHub REST API (code summaries) & Adzuna API (live vacancies).
-*   **AI Engine**: Google AI Studio Gemini API (`gemini-2.0-flash`).
+*   **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS 4, Lucide icons.
+*   **Backend**: Node.js, Express, Multer (file uploads), Mongoose (ODM).
+*   **Database**: MongoDB Atlas.
+*   **File Storage**: Cloudinary (resume PDF/image hosting).
+*   **External Feeds**: GitHub REST API (code activity summaries) & Adzuna API (live job vacancies).
+*   **AI Engine**: [Groq](https://groq.com/) — `openai/gpt-oss-120b` for text generation (resume parsing, career scoring, interview generation, outreach drafting) and `qwen/qwen3.8-27b` for vision-based OCR on scanned resume uploads.
 
 ### 📊 Data Flow Diagram
 
 ```
-[ Next.js 15 Client ] <==== (JSON / REST APIs) ====> [ Express Backend ]
+[ Next.js 16 Client ] <==== (JSON / REST APIs) ====> [ Express Backend ]
                                                             ||
      =======================================================||=======================
      ||                     ||                     ||                      ||
-[ MongoDB Atlas ]     [ Cloudinary ]        [ Gemini API ]          [ Adzuna / GitHub APIs ]
-  (Profile/Jobs)       (PDF Storage)         (Evaluations)             (External Feeds)
+[ MongoDB Atlas ]     [ Cloudinary ]         [ Groq API ]           [ Adzuna / GitHub APIs ]
+  (Profile/Jobs)       (PDF Storage)     (Parsing/Scoring/OCR)         (External Feeds)
 ```
 
 ---
@@ -40,59 +43,52 @@
 ## 🔑 Core Features & Modules
 
 ### 🧑‍💻 1. Unified Dashboard & Profiler
-*   **Career Score**: Computes a career readiness score (0-100) using a strict weighting: **50% Profile Tech Skills/Projects** and **50% GitHub Activity Score**.
-*   **AI Recommendations**: Computes bulleted strengths and suggestions on how to improve coding structures.
-*   **Onboarding cards**: Direct form updates for education, projects, repositories, and target goals.
+*   **Career Score**: Computes a career readiness score (0–100) from a fixed, explainable weighting across skills/projects and GitHub activity — the AI fills in the assessment within that weighting, it doesn't invent the formula.
+*   **AI Recommendations**: Strengths and improvement suggestions based on the candidate's actual profile and GitHub activity.
+*   **Onboarding**: Structured forms for education, projects, target role, and linked accounts (GitHub/LinkedIn).
 
-### 📄 2. Automated Resume & ATS Suite
-*   **PDF Extractor**: Upload a resume PDF. The backend extracts text using `pdf-parse` and updates profile skills via Gemini automatically—zero client-side extraction required.
-*   **ATS Checker**: Paste a target Job Description. The system matches it against profile data to output an ATS compatibility score, identify missing keywords, highlight formatting issues, and suggest revisions.
-*   **Resume Exporter**: A button that reads profile metadata and exports a clean, single-page professional PDF resume using a client-side layout.
+### 📄 2. Resume Parser, Builder & ATS Suite
+*   **Resume Parser**: Upload a PDF or image resume. Text extraction falls back through three tiers — `pdf-parse`, then `pdfjs-dist`'s own text layer, then Groq Vision OCR on rasterized pages — so even scanned resumes get parsed, with skills auto-extracted into the profile.
+*   **ATS Checker**: Paste a target job description; get a compatibility score, missing keywords, and formatting feedback.
+*   **Resume Builder**: A live, two-template resume editor that auto-fits its content to exactly one printable page (US Letter) regardless of how much content is entered, then exports to PDF via the browser's print dialog.
 
 ### 🎤 3. Customizable Mock Interviews
-*   **Length Options**: Set tests to **5, 10, or 20 questions**.
-*   **Format Selection**:
-    *   *Written Mode*: Open-ended technical/HR questions where users type responses, evaluated by Gemini.
-    *   *MCQ Mode*: Multiple choice questions evaluated programmatically (saving rate limits and providing instant scorecards).
+*   **Length Options**: 5, 10, or 20 questions per session.
+*   **Format Selection**: Written (open-ended, AI-evaluated) or MCQ (evaluated programmatically, instant scorecard).
+*   **Interview Journal**: Past sessions are saved with feedback and improvement areas.
 
-### 📋 4. Kanban Job Tracker & Adzuna Live Search
-*   **Job Finder**: Fetch live, active job listings matching career goals using the Adzuna API.
-*   **AI Match Check**: Click any tracked card, paste a job description, and get a match score and missing keyword gaps.
-*   **HTML5 Kanban Pipeline**: Drag cards between columns (Wishlist ➔ Applied ➔ Interviewing ➔ Offer ➔ Rejected).
+### 📋 4. Kanban Job Tracker & Live Search
+*   **Job Finder**: Live job search via the Adzuna API, with a drag-and-drop Kanban board (Wishlist → Applied → Interviewing → Offer → Rejected).
+*   **AI Match Check**: Paste a job description against any tracked application for a match score and skill-gap breakdown.
+*   Each result links directly to the original posting.
 
-### 🤖 5. Context-Aware AI Copilot Chat
-*   A persistent sidebar helper that answers questions using the candidate's parsed database metrics (roadmap steps, applications list, strengths) to keep chat sessions actionable.
+### 🤖 5. Context-Aware AI Copilot
+*   A persistent sidebar assistant that answers questions using the candidate's own parsed data (roadmap, applications, strengths) — it won't guess at scores that haven't been computed yet, it tells you what to run first.
 
 ### ✉️ 6. Outreach AI (Networking Assistant)
-*   **Smart Drafting:** Automatically drafts highly personalized LinkedIn connection requests or Cold Emails.
-*   **Context Aware:** Injects the user's career summary, target role, and target company to write messages that sound authentic and professional, avoiding generic AI spam.
+*   Drafts personalized cold emails or LinkedIn connection requests from the candidate's real profile data and target company/role, avoiding generic AI-spam phrasing.
 
 ### 🌐 7. Public Portfolio
-*   **Live Shareable Link:** Users get a dedicated public route (`/p/[username]`) to share their profile with recruiters.
-*   **GitHub Integration:** Embeds their live GitHub activity chart directly into the portfolio.
+*   A dedicated, shareable route (`/p/[username]`) presenting the candidate's profile, projects, and live GitHub activity — the link you'd actually send a recruiter.
 
 ---
 
 ## 🚀 Installation & Setup
 
 ### 📌 Prerequisites
-Make sure you have Node.js (v18+) and npm installed.
+Node.js v18+, npm, and a MongoDB connection (Atlas or local).
 
 ### ⚙️ Backend Setup (`/careeros`)
-1. Navigate to the backend directory:
-   ```bash
+1. ```bash
    cd careeros
-   ```
-2. Install dependencies:
-   ```bash
    npm install
    ```
-3. Create a `.env` file based on `.env.example` and fill in your developer keys:
+2. Copy `.env.example` to `.env` and fill in your own keys:
    ```env
-   PORT=5000
+   PORT=5001
    MONGO_URI=your_mongodb_connection_uri
    JWT_SECRET=your_jwt_secret
-   GEMINI_API_KEY=your_gemini_api_key
+   GROQ_API_KEY=your_groq_api_key
    GITHUB_TOKEN=your_github_token
    CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
    CLOUDINARY_API_KEY=your_cloudinary_key
@@ -100,47 +96,44 @@ Make sure you have Node.js (v18+) and npm installed.
    ADZUNA_APP_ID=your_adzuna_app_id
    ADZUNA_API_KEY=your_adzuna_api_key
    ```
-4. Start the backend developer server:
-   ```bash
+3. ```bash
    npm run dev
    ```
 
 ### 🖥️ Frontend Setup (`/frontend`)
-1. Open a new terminal and navigate to the frontend directory:
-   ```bash
+1. ```bash
    cd frontend
-   ```
-2. Install dependencies:
-   ```bash
    npm install
    ```
-3. Start the Next.js development client:
-   ```bash
+2. Point the client at your backend (defaults to `http://localhost:5001/api` if unset):
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:5001/api
+   ```
+3. ```bash
    npm run dev
    ```
-4. Open [http://localhost:3000](http://localhost:3000) in your web browser.
+4. Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## 🔒 Quota Guardrails & Caching Layer
 
-To protect the Google AI Studio free tier limits, CareerOS AI utilizes a multi-layered guardrail:
-1.  **In-Memory Rate Limiting**: Enforces a per-minute token bucket rate limiter (max 10 calls/min) to prevent rapid user spam from consuming quotas.
-2.  **Daily Quota Log (`UsageLog` Collection)**: Blocks outgoing calls once the daily limit (default 1400 calls) is reached, serving cached fallback data instead.
-3.  **Mongoose Schema Cache TTL**: Calculates GitHub Analysis and Career Scores once and caches them for **24 hours** (`GEMINI_CACHE_TTL_HOURS`). Subsequent page visits load instantly from MongoDB.
-4.  **Programmatic MCQ Grader**: Evaluating MCQ choices is done programmatically on the backend server, saving expensive LLM inferences.
+To keep API usage predictable on a free-tier Groq key, CareerOS AI applies a multi-layered guardrail:
+1.  **In-Memory Rate Limiting**: A per-minute token bucket (max 10 calls/min) prevents rapid spam from burning quota.
+2.  **Daily Quota Log** (`UsageLog` collection): Blocks outgoing calls once the daily limit (default 1400) is reached, serving cached/fallback data instead of erroring.
+3.  **24h Cache TTL**: GitHub analysis and Career Score are cached on the profile and only recomputed after `AI_CACHE_TTL_HOURS` (default 24h) or an explicit refresh.
+4.  **Programmatic MCQ Grading**: MCQ interview answers are scored in code, not via an LLM call.
 
 ---
 
 ## 📸 Screenshots
-*(Add screenshots or a GIF of your dashboard and interview workflow here)*
+
+See the [live demo](https://careeros-ai-phi.vercel.app) for the current UI. *(Add screenshots or a GIF of the dashboard, resume builder, and interview flow here.)*
 
 ---
 
 ## 🤝 Contributing
-Contributions are always welcome! Feel free to open a pull request or file an issue if you encounter bugs or have feature requests.
-
----
+Contributions are welcome — open a pull request or file an issue for bugs or feature requests.
 
 ## 📜 License
-This project is licensed under the [MIT License](LICENSE).
+[MIT License](LICENSE).

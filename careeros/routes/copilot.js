@@ -2,7 +2,7 @@ const express = require("express");
 const Profile = require("../models/Profile");
 const JobApplication = require("../models/JobApplication");
 const authMiddleware = require("../middleware/auth");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -12,8 +12,10 @@ router.post("/ask", async (req, res) => {
     const { question } = req.body;
     if (!question) return res.status(400).json({ error: "question is required" });
 
-    const profile = await Profile.findOne({ user: req.userId });
-    const jobs = await JobApplication.find({ user: req.userId }).select("company role status");
+    const [profile, jobs] = await Promise.all([
+      Profile.findOne({ user: req.userId }),
+      JobApplication.find({ user: req.userId }).select("company role status"),
+    ]);
 
     // Context is built from CACHED analysis only - copilot never triggers
     // a fresh GitHub/career score computation itself, to avoid hidden quota burn.
@@ -39,7 +41,7 @@ Answer concisely and actionably.
 
 User question: "${question}"`;
 
-    const result = await callGemini("ai_copilot", prompt);
+    const result = await callAI("ai_copilot", prompt);
 
     if (!result.success) {
       return res.status(503).json({

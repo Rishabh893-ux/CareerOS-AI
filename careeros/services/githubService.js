@@ -21,8 +21,10 @@ async function ghFetch(path) {
  * NOT full repo contents, just metadata needed for scoring.
  */
 async function fetchGithubSummary(username) {
-  const profile = await ghFetch(`/users/${username}`);
-  const repos = await ghFetch(`/users/${username}/repos?per_page=100&sort=updated`);
+  const [profile, repos] = await Promise.all([
+    ghFetch(`/users/${username}`),
+    ghFetch(`/users/${username}/repos?per_page=100&sort=updated`),
+  ]);
 
   const languageCounts = {};
   let totalStars = 0;

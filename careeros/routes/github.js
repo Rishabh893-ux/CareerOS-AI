@@ -3,36 +3,31 @@ const User = require("../models/User");
 const Profile = require("../models/Profile");
 const authMiddleware = require("../middleware/auth");
 const { fetchGithubSummary } = require("../services/githubService");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
+const { isStale } = require("../services/cacheUtils");
 
 const router = express.Router();
 router.use(authMiddleware);
 
-const CACHE_TTL_HOURS = parseInt(process.env.GEMINI_CACHE_TTL_HOURS || "24", 10);
-
 router.get("/analyze", async (req, res) => {
   try {
-    const forceRefresh = req.query.refresh === "true";
+    const isRefresh = req.query.refresh === "true";
 
-    const user = await User.findById(req.userId);
+    const [user, profile] = await Promise.all([
+      User.findById(req.userId),
+      Profile.findOne({ user: req.userId }),
+    ]);
     if (!user?.githubUsername) {
       return res.status(400).json({ error: "No GitHub username linked. Set it via PUT /profile/links first." });
     }
-
-    const profile = await Profile.findOne({ user: req.userId });
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
 
     // Serve cached analysis unless explicitly refreshed or stale beyond TTL
-    const { force, refresh } = req.query;
-    const isRefresh = force || refresh === "true";
-    const cached = profile?.githubAnalysis;
-    
-    if (!isRefresh && cached && cached.computedAt) {
-      const hoursSince = (new Date() - new Date(cached.computedAt)) / (1000 * 60 * 60);
-      const ttl = process.env.GEMINI_CACHE_TTL_HOURS || 24;
-      if (hoursSince < ttl) {
-        console.log("[GitHub] Serving cached analysis");
-        return res.json(cached);
-      }
+    const cached = profile.githubAnalysis;
+
+    if (!isRefresh && cached && !isStale(cached.computedAt)) {
+      console.log("[GitHub] Serving cached analysis");
+      return res.json(cached);
     }
 
     const ghSummary = await fetchGithubSummary(user.githubUsername);
@@ -47,7 +42,7 @@ Return ONLY JSON in this exact shape:
   "topLanguages": ["lang1", "lang2"]
 }`;
 
-    const result = await callGemini("github_analysis", prompt, {
+    const result = await callAI("github_analysis", prompt, {
       jsonSchemaHint: true,
       fallbackData: cached ? cached.toObject() : null,
     });

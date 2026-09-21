@@ -1,18 +1,22 @@
 const JobApplication = require("../models/JobApplication");
 const Profile = require("../models/Profile");
-const { callGemini } = require("./geminiService");
+const { callAI } = require("./aiService");
+const { getMergedSkills } = require("./profileUtils");
 
 async function analyzeJobMatch(jobId, userId) {
   try {
     console.log(`[JobMatchService] Starting background match analysis for Job ${jobId}`);
 
-    const job = await JobApplication.findOne({ _id: jobId, user: userId });
+    const [job, profile] = await Promise.all([
+      JobApplication.findOne({ _id: jobId, user: userId }),
+      Profile.findOne({ user: userId }),
+    ]);
+
     if (!job || !job.jobDescription) {
       console.error(`[JobMatchService] Job ${jobId} not found or missing description.`);
       return;
     }
 
-    const profile = await Profile.findOne({ user: userId });
     if (!profile) {
        console.error(`[JobMatchService] Profile for user ${userId} not found.`);
        job.matchStatus = "failed";
@@ -20,7 +24,7 @@ async function analyzeJobMatch(jobId, userId) {
        return;
     }
 
-    const userSkills = [...new Set([...(profile.skills || []), ...(profile.resumeExtractedSkills || [])])];
+    const userSkills = getMergedSkills(profile);
     
     // Format experience to strings
     const experienceData = (profile.experience || []).map(exp => 
@@ -53,10 +57,10 @@ async function analyzeJobMatch(jobId, userId) {
       "tips": ["...", "..."]
     }`;
 
-    const result = await callGemini("job_match_advanced", prompt, { jsonSchemaHint: true });
+    const result = await callAI("job_match_advanced", prompt, { jsonSchemaHint: true });
     
     if (!result.success) {
-      console.error(`[JobMatchService] Gemini returned error for Job ${jobId}: ${result.error}`);
+      console.error(`[JobMatchService] Claude returned error for Job ${jobId}: ${result.error}`);
       job.matchStatus = "failed";
       await job.save();
       return;

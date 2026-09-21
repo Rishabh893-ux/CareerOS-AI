@@ -1,6 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const Profile = require("../models/Profile");
 
@@ -20,7 +22,12 @@ router.post("/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, passwordHash });
-    await Profile.create({ user: user._id }); // empty profile shell
+    try {
+      await Profile.create({ user: user._id }); // empty profile shell
+    } catch (profileErr) {
+      await User.findByIdAndDelete(user._id); // roll back the orphaned user
+      throw profileErr;
+    }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
@@ -58,6 +65,131 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// One shared, read-and-play demo account - lets a visitor explore every
+// feature with realistic pre-filled data, no signup required. Seeded once
+// on first use; subsequent calls just re-issue a token for the same user.
+const DEMO_EMAIL = "demo@careeros.ai";
+
+router.post("/demo", async (req, res) => {
+  try {
+    let user = await User.findOne({ email: DEMO_EMAIL });
+
+    if (!user) {
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+      user = await User.create({
+        name: "Alex Rivera",
+        email: DEMO_EMAIL,
+        passwordHash,
+        username: "demo",
+        githubUsername: "octocat",
+      });
+
+      const now = new Date();
+      try {
+        await Profile.create({
+          user: user._id,
+          phone: "+1 (555) 010-1234",
+          location: "Remote",
+          careerGoal: "Seeking a Backend/Cloud Software Engineer role at a product-focused team.",
+          skills: ["JavaScript", "TypeScript", "Node.js", "React", "MongoDB", "PostgreSQL", "Docker", "AWS", "GraphQL", "System Design"],
+          resumeExtractedSkills: ["Node.js", "React", "MongoDB"],
+          education: [
+            { institute: "State University", degree: "B.Tech", branch: "Computer Science", cgpa: 8.7, graduationYear: 2024 },
+          ],
+          experience: [
+            {
+              company: "Nimbus Cloud Systems",
+              role: "Software Engineer",
+              startDate: "Jul 2024",
+              endDate: "Present",
+              description: "- Built and shipped internal tooling used by 40+ engineers daily\n- Migrated a legacy REST service to GraphQL, cutting client round-trips by 35%\n- On-call rotation for a payments microservice handling 200k+ requests/day",
+            },
+            {
+              company: "Brightline Labs",
+              role: "Software Engineering Intern",
+              startDate: "May 2023",
+              endDate: "Aug 2023",
+              description: "- Built a real-time notifications feature with WebSockets\n- Wrote integration tests that caught 3 production-bound regressions pre-launch",
+            },
+          ],
+          certifications: [
+            { name: "AWS Certified Developer – Associate", issuer: "Amazon Web Services", date: "2024" },
+          ],
+          projects: [
+            {
+              title: "CareerOS AI",
+              description: "This app — an AI career-readiness platform with resume parsing, ATS scoring, mock interviews, and a job tracker.",
+              techStack: ["Next.js", "Express", "MongoDB", "Groq"],
+              repoUrl: "github.com/octocat/careeros-ai",
+            },
+            {
+              title: "Pantry — Recipe Sharing API",
+              description: "A REST API for a recipe-sharing app with search, ratings, and image uploads. Deployed with CI/CD on push to main.",
+              techStack: ["Node.js", "PostgreSQL", "Docker"],
+              repoUrl: "github.com/octocat/pantry-api",
+            },
+            {
+              title: "Latency Tracker",
+              description: "A small CLI that pings a list of endpoints on a schedule and alerts on latency regressions.",
+              techStack: ["Go", "SQLite"],
+              repoUrl: "github.com/octocat/latency-tracker",
+            },
+          ],
+          careerScore: {
+            score: 78,
+            strengths: [
+              "Solid full-stack project portfolio with real deployed work",
+              "Consistent GitHub activity across multiple languages",
+              "Relevant internship-to-full-time career progression",
+            ],
+            weaknesses: [
+              "Limited large-scale distributed systems experience",
+              "No public technical writing or conference talks yet",
+            ],
+            computedAt: now,
+          },
+          githubAnalysis: {
+            score: 71,
+            summary: "Active contributor with a healthy mix of backend and tooling projects; commit history shows consistent, incremental work rather than one-off dumps.",
+            topLanguages: ["JavaScript", "TypeScript", "Go"],
+            repos: [
+              { name: "careeros-ai", description: "AI career-readiness platform", language: "TypeScript", stars: 12, html_url: "https://github.com/octocat" },
+              { name: "pantry-api", description: "Recipe sharing REST API", language: "JavaScript", stars: 4, html_url: "https://github.com/octocat" },
+              { name: "latency-tracker", description: "Endpoint latency alerting CLI", language: "Go", stars: 2, html_url: "https://github.com/octocat" },
+            ],
+            computedAt: now,
+          },
+          skillGap: {
+            targetRole: "Backend/Cloud Software Engineer",
+            missingSkills: ["Kubernetes", "Terraform", "Kafka", "gRPC"],
+            computedAt: now,
+          },
+          roadmap: {
+            targetRole: "Backend/Cloud Software Engineer",
+            steps: [
+              { title: "Learn Kubernetes fundamentals", description: "Deploy an existing project to a local k8s cluster (kind/minikube).", resourceHint: "Kubernetes official docs + a hands-on course" },
+              { title: "Get hands-on with Terraform", description: "Recreate your current AWS setup as Infrastructure-as-Code.", resourceHint: "HashiCorp Terraform tutorials" },
+              { title: "Understand event-driven architecture", description: "Build a small producer/consumer service using Kafka or a managed equivalent.", resourceHint: "Kafka official quickstart" },
+            ],
+            computedAt: now,
+          },
+        });
+      } catch (profileErr) {
+        await User.findByIdAndDelete(user._id);
+        throw profileErr;
+      }
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    });
+
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const authMiddleware = require("../middleware/auth");
 
 router.get("/me", authMiddleware, async (req, res) => {
@@ -76,7 +208,7 @@ router.put("/settings", authMiddleware, async (req, res) => {
     
     // Check if username is already taken by someone else
     if (username) {
-      const existing = await User.findOne({ username, _id: { $ne: req.userId } });
+      const existing = await User.findOne({ username: username.toLowerCase(), _id: { $ne: req.userId } });
       if (existing) {
         return res.status(409).json({ error: "Username is already taken" });
       }
@@ -94,9 +226,6 @@ router.put("/settings", authMiddleware, async (req, res) => {
   }
 });
 
-const nodemailer = require("nodemailer");
-const crypto = require("crypto");
-
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -110,7 +239,7 @@ router.post("/forgot-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const frontendUrl = "https://careeros-ai-phi.vercel.app";
+    const frontendUrl = process.env.FRONTEND_URL || "https://careeros-ai-phi.vercel.app";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     // Dummy email log if nodemailer not configured properly

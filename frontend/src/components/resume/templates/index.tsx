@@ -1,4 +1,26 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+
+// US Letter height @ 96dpi - the fixed page size every template renders at.
+const PAGE_HEIGHT_PX = 1056;
+
+// Measures the natural (unscaled) height of a template's content and shrinks
+// it via `zoom` so it always fits within one page, however much content is
+// in it - re-measured whenever the resume data or compact toggle changes.
+function useAutoFitZoom(deps: React.DependencyList) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.zoom = "1";
+    const natural = el.scrollHeight;
+    setZoom(natural > PAGE_HEIGHT_PX ? PAGE_HEIGHT_PX / natural : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  return { ref, zoom };
+}
 
 export interface ResumeData {
   name: string;
@@ -24,8 +46,10 @@ interface TemplateProps {
 }
 
 export const ClassicAtsTemplate: React.FC<TemplateProps> = ({ data, isCompact }) => {
+  const { ref, zoom } = useAutoFitZoom([data, isCompact]);
   return (
-    <div className={`bg-white text-black font-sans h-[1056px] w-[816px] mx-auto box-border overflow-hidden print:w-full print:h-auto print:p-0 ${isCompact ? 'p-4' : 'p-8'}`}>
+    <div className="bg-white text-black font-sans h-[1056px] w-[816px] mx-auto box-border overflow-hidden">
+    <div ref={ref} className={isCompact ? 'p-4' : 'p-8'} style={{ zoom }}>
       {/* Header */}
       <div className={`text-center ${isCompact ? 'mb-4' : 'mb-6'}`}>
         <h1 className={`${isCompact ? 'text-2xl' : 'text-3xl'} font-bold uppercase tracking-wider mb-1`}>{data.name || "Your Name"}</h1>
@@ -142,15 +166,18 @@ export const ClassicAtsTemplate: React.FC<TemplateProps> = ({ data, isCompact })
         </div>
       )}
     </div>
+    </div>
   );
 };
 
 export const ModernTemplate: React.FC<TemplateProps> = ({ data, isCompact }) => {
+  const { ref, zoom } = useAutoFitZoom([data, isCompact]);
   return (
-    <div className="bg-white text-gray-800 font-sans h-[1056px] w-[816px] mx-auto box-border flex overflow-hidden print:w-full print:h-auto print:p-0">
-      
+    <div className="bg-white text-gray-800 font-sans h-[1056px] w-[816px] mx-auto box-border overflow-hidden">
+    <div ref={ref} className="flex" style={{ zoom }}>
+
       {/* Sidebar */}
-      <div className={`w-[30%] bg-[#f4f4f6] ${isCompact ? 'p-4' : 'p-6'} border-r border-gray-200 h-full`}>
+      <div className={`w-[30%] bg-[#f4f4f6] ${isCompact ? 'p-4' : 'p-6'} border-r border-gray-200`}>
         <h1 className={`${isCompact ? 'text-xl' : 'text-2xl'} font-black text-gray-900 leading-tight mb-2 tracking-tight`}>{data.name || "Your Name"}</h1>
         <div className={`w-10 ${isCompact ? 'h-0.5' : 'h-1'} bg-blue-600 ${isCompact ? 'mb-4' : 'mb-6'}`}></div>
 
@@ -215,7 +242,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, isCompact }) => 
       </div>
 
       {/* Main Content */}
-      <div className={`w-[70%] ${isCompact ? 'p-4' : 'p-8'} h-full bg-white`}>
+      <div className={`w-[70%] ${isCompact ? 'p-4' : 'p-8'} bg-white`}>
         
         {data.summary && (
           <div className={`${isCompact ? 'mb-4' : 'mb-8'}`}>
@@ -281,6 +308,7 @@ export const ModernTemplate: React.FC<TemplateProps> = ({ data, isCompact }) => 
         )}
 
       </div>
+    </div>
     </div>
   );
 };

@@ -12,7 +12,7 @@ router.get("/today", async (req, res) => {
   res.json({
     date,
     total,
-    limit: parseInt(process.env.GEMINI_DAILY_LIMIT || "1400", 10),
+    limit: parseInt(process.env.AI_DAILY_LIMIT || "1400", 10),
     byFeature: logs.map((l) => ({ feature: l.feature, count: l.count })),
   });
 });

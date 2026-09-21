@@ -1,25 +1,22 @@
-# CareerOS AI — Backend (MVP + Growth/Interview/LinkedIn)
+# CareerOS AI — Backend
 
-Scope: Auth → Profile → Resume Parsing → GitHub Analyzer → Career Score → Job Tracker → AI Copilot → Skill Gap Analysis → Roadmap Generator → Interview Prep (HR/Technical + mock feedback) → LinkedIn Analyzer (manual-input based).
+Express + MongoDB API powering [CareerOS AI](../README.md): auth, profile management, resume parsing & ATS scoring, GitHub analysis, career scoring, skill-gap/roadmap generation, mock interviews, job tracking with live search, outreach message drafting, and a context-aware AI copilot.
 
-Market Intelligence OS, Analytics OS, and Career Workspace notes remain deferred to v2 — add once you have real usage data and know your actual Gemini quota burn.
+## API Modules
 
-## Endpoints added in this round
-
-**Growth OS** (`/api/growth`)
-- `POST /skill-gap` — `{ targetRole }` → missing skills, cached 24h per role
-- `POST /roadmap` — `{ targetRole }` → ordered learning steps, uses skill gap data if already computed
-
-**Interview OS** (`/api/interview`)
-- `POST /generate` — `{ type: "HR"|"Technical", topic? }` → creates a session with 5 questions
-- `POST /:id/feedback` — `{ answers: [...] }` → AI feedback + improvement areas, saved to session
-- `GET /` — list past sessions (the interview journal)
-- `DELETE /:id`
-
-**LinkedIn OS** (`/api/linkedin`)
-- `PUT /input` — user pastes their own headline/about/skills (no scraping — LinkedIn has no usable free API for this)
-- `GET /analyze` — scores the pasted content, cached 24h
-- `POST /generate-post` — `{ postType, context }` → drafts a post
+| Module | Base path | What it does |
+|---|---|---|
+| Auth | `/api/auth` | Register/login (JWT), password reset, account settings (username, GitHub/LinkedIn links) |
+| Profile | `/api/profile` | CRUD for education, projects, skills, career goal; public portfolio lookup (`/public/:username`) |
+| Resume | `/api/resume` | Upload + parse (PDF/image, three-tier extraction — see below), ATS check against a job description, bullet enhancement, PDF export data |
+| GitHub | `/api/github` | Fetches and AI-summarizes a linked GitHub profile's activity and repos |
+| Career | `/api/career` | Computes the 0–100 career readiness score |
+| Growth | `/api/growth` | `POST /skill-gap` and `POST /roadmap` for a target role, cached 24h per role |
+| Interview | `/api/interview` | Generates HR/Technical mock interviews (written or MCQ), scores answers, keeps a session journal |
+| Jobs | `/api/jobs` | Kanban job tracker (CRUD) + live search via Adzuna + AI job-match scoring |
+| Outreach | `/api/outreach` | Drafts personalized cold emails / LinkedIn messages from profile data |
+| Copilot | `/api/copilot` | Chat assistant that answers from the user's own cached data, never triggers fresh AI analysis itself |
+| Usage | `/api/usage` | Daily AI call quota status |
 
 ## Setup
 
@@ -29,38 +26,45 @@ cp .env.example .env   # fill in your own keys
 npm run dev
 ```
 
-Required free-tier accounts:
+Required accounts (all have usable free tiers):
 - MongoDB Atlas (free M0 cluster)
-- Google AI Studio → Gemini API key
+- [Groq Console](https://console.groq.com/keys) → API key
 - GitHub personal access token (no special scopes needed for public repo reads)
-- Cloudinary free tier (resume PDF storage)
+- Cloudinary (resume file storage)
+- Adzuna (optional — falls back to mock listings if unset)
 
-## Architecture decisions (for report / viva)
+## Resume text extraction
 
-**Why MongoDB over SQL:** Profile data is nested and varies per user (education arrays, project arrays, skill lists) — document model avoids a lot of join tables a relational schema would need. Also free-tier friendly (Atlas M0).
+`POST /api/resume/upload` runs entirely server-side, in three tiers, so both native-text and scanned resumes work:
+1. **`pdf-parse`** — fast path for PDFs with a real text layer.
+2. **`pdfjs-dist`'s own text layer API** — recovers text from PDFs that trip up `pdf-parse` (unusual encodings, malformed xrefs), without touching any rendering code.
+3. **Rasterize + Groq Vision OCR** — only for genuinely scanned/image-only PDFs: pages are rendered to images (`pdfjs-dist` + `@napi-rs/canvas`) and OCR'd.
 
-**Why raw files never touch Mongo:** Resume PDFs go to Cloudinary; only the URL and Gemini-extracted skill list are stored in Mongo. Keeps documents small and respects the 512MB free-tier cap.
+Image uploads (JPG/PNG) go straight through Groq Vision. Only one `pdfjs-dist` version is ever loaded in the process — its Node "fake worker" caches on a process-wide global, so a second copy would silently produce version-mismatch crashes.
 
-**Why one shared `geminiService.js`:** Every AI feature (resume parsing, GitHub analysis, career score, job match, copilot) goes through one function. This is where rate limiting, daily quota tracking, and cache fallback live — instead of duplicating that logic (and its bugs) in five different route files.
+## Architecture decisions
 
-**Career Score weighting is fixed, not model-decided:** 40% skills/projects, 30% GitHub activity, 30% goal alignment. The model fills in the assessment within that weighting — it doesn't invent the formula. This was a deliberate choice so the score is explainable and reproducible, not a black box.
+**Why MongoDB over SQL:** Profile data is nested and varies per user (education arrays, project arrays, skill lists) — a document model avoids the join-table sprawl a relational schema would need here, and it's free-tier friendly (Atlas M0).
 
-**Caching strategy:** GitHub analysis and Career Score are cached on the Profile document with a `computedAt` timestamp. They're only recomputed when the cache is older than `GEMINI_CACHE_TTL_HOURS` (default 24h) or the user explicitly passes `?refresh=true`. This is the single biggest lever against Gemini free-tier quota exhaustion — most dashboard loads serve cached data, zero AI calls.
+**Why raw files never touch Mongo:** Resume files go to Cloudinary; only the URL and the AI-extracted skill list are stored in Mongo. Keeps documents small and respects the 512MB free-tier cap.
 
-**Quota guardrail layers (in order of effect):**
-1. Daily quota check (`UsageLog` collection) — stops calls once `GEMINI_DAILY_LIMIT` is hit, serves fallback/cached data instead of erroring.
-2. Per-minute in-memory token bucket — stops one user from burning the daily quota in a spam burst (e.g. hammering AI Copilot).
+**Why one shared `aiService.js`:** Every AI feature (resume parsing, GitHub analysis, career score, job match, copilot, outreach) goes through one function. Rate limiting, daily quota tracking, and cache fallback live there once — instead of being duplicated (and re-bugged) across ten route files.
+
+**Career Score weighting is fixed, not model-decided:** the AI fills in the assessment within a fixed weighting (skills/projects, GitHub activity, goal alignment) — it doesn't invent the formula. Deliberate, so the score is explainable and reproducible, not a black box.
+
+**Caching strategy:** GitHub analysis and Career Score are cached on the Profile document with a `computedAt` timestamp, recomputed only when older than `AI_CACHE_TTL_HOURS` (default 24h) or on an explicit `?refresh=true`. This is the single biggest lever against quota exhaustion — most dashboard loads serve cached data with zero AI calls.
+
+**Quota guardrail layers, in order of effect:**
+1. Daily quota check (`UsageLog` collection) — stops calls once `AI_DAILY_LIMIT` is hit, serves cached/fallback data instead of erroring.
+2. Per-minute in-memory token bucket — stops one user from burning the daily quota in a spam burst.
 3. Caching (above) — reduces call volume in the first place.
 
-**AI Copilot never triggers fresh analysis itself:** It only reads cached `careerScore` / `githubAnalysis` / `linkedinAnalysis` / `skillGap` / `roadmap` from the Profile. If those are missing, it tells the user which endpoint to call first, rather than silently spending another Gemini call. Keeps Copilot's cost per message to exactly one call.
+**AI Copilot never triggers fresh analysis itself:** it only reads cached `careerScore` / `githubAnalysis` / `skillGap` / `roadmap` from the Profile. If those are missing, it tells the user which endpoint to run first, rather than silently spending another AI call. Keeps Copilot's cost to exactly one call per message.
 
-**Why LinkedIn is manual-input, not scraped:** LinkedIn's official API doesn't expose headline/about/post data to third-party apps without partnership approval, and scraping breaks ToS and is fragile. The user pastes their own text instead — same AI scoring/rewriting value, zero scraping risk, zero broken integration when LinkedIn changes its HTML.
+**Why roadmap reuses skill-gap data instead of a fresh call:** if `/growth/skill-gap` already ran for the same `targetRole`, `/growth/roadmap` passes that missing-skills list into its own prompt instead of asking the model to re-derive it — one less redundant inference per role.
 
-**Why roadmap reuses skill gap data instead of a fresh call:** If `/growth/skill-gap` was already run for the same `targetRole`, `/growth/roadmap` passes that missing-skills list into its prompt instead of asking Gemini to re-derive it — one less redundant inference per role.
+## Possible next steps
 
-## Known gaps to address before demo/submission
-
-- Resume text extraction (PDF → text) is expected to happen client-side (e.g. with pdf.js) before calling `/resume/parse`. No server-side PDF parsing is wired up yet.
-- No frontend included in this scaffold — Next.js 15 + Tailwind + Shadcn per original spec, separate build.
-- `fetchGithubSummary` skips per-repo README checks to avoid N+1 GitHub API calls; "hasReadme" field is a placeholder for v2.
-- Add request validation (e.g. `zod` or `express-validator`) before submission — current routes do minimal manual checks only.
+- Request validation (e.g. `zod` or `express-validator`) — current routes do minimal manual checks only.
+- `fetchGithubSummary` skips per-repo README checks to avoid N+1 GitHub API calls; a "hasReadme" signal is a natural follow-up.
+- Automated tests (none yet, frontend or backend).

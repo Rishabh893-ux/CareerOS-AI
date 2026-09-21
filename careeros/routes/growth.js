@@ -1,16 +1,11 @@
 const express = require("express");
-const Profile = require("../models/Profile");
 const authMiddleware = require("../middleware/auth");
-const { callGemini } = require("../services/geminiService");
+const { callAI } = require("../services/aiService");
+const { isStale } = require("../services/cacheUtils");
+const { findProfileOr404, getMergedSkills } = require("../services/profileUtils");
 
 const router = express.Router();
 router.use(authMiddleware);
-
-const CACHE_TTL_HOURS = parseInt(process.env.GEMINI_CACHE_TTL_HOURS || "24", 10);
-
-function isStale(computedAt) {
-  return !computedAt || Date.now() - new Date(computedAt).getTime() > CACHE_TTL_HOURS * 60 * 60 * 1000;
-}
 
 // --- Skill Gap Analysis ---
 router.post("/skill-gap", async (req, res) => {
@@ -19,8 +14,8 @@ router.post("/skill-gap", async (req, res) => {
     if (!targetRole) return res.status(400).json({ error: "targetRole is required" });
 
     const forceRefresh = req.query.refresh === "true";
-    const profile = await Profile.findOne({ user: req.userId });
-    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    const profile = await findProfileOr404(req.userId, res);
+    if (!profile) return;
 
     const cached = profile.skillGap;
     const sameRole = cached?.targetRole === targetRole;
@@ -29,7 +24,7 @@ router.post("/skill-gap", async (req, res) => {
       return res.json({ ...cached.toObject(), fromCache: true });
     }
 
-    const currentSkills = [...new Set([...(profile.skills || []), ...(profile.resumeExtractedSkills || [])])];
+    const currentSkills = getMergedSkills(profile);
 
     const prompt = `A student has these current skills: ${JSON.stringify(currentSkills)}.
 Their target role is: "${targetRole}".
@@ -37,7 +32,7 @@ Their target role is: "${targetRole}".
 Identify the skills they are MISSING for this role, most important first.
 Return ONLY JSON: { "missingSkills": ["skill1", "skill2", ...] } (max 10 items)`;
 
-    const result = await callGemini("skill_gap", prompt, {
+    const result = await callAI("skill_gap", prompt, {
       jsonSchemaHint: true,
       fallbackData: sameRole ? cached?.toObject() : null,
     });
@@ -46,9 +41,10 @@ Return ONLY JSON: { "missingSkills": ["skill1", "skill2", ...] } (max 10 items)`
       return res.status(503).json({ error: result.error });
     }
 
+    const missingSkills = Array.isArray(result.data?.missingSkills) ? result.data.missingSkills : [];
     const skillGap = {
       targetRole,
-      missingSkills: result.data.missingSkills || result.data,
+      missingSkills,
       computedAt: result.success ? new Date() : cached?.computedAt,
     };
 
@@ -70,8 +66,8 @@ router.post("/roadmap", async (req, res) => {
     if (!targetRole) return res.status(400).json({ error: "targetRole is required" });
 
     const forceRefresh = req.query.refresh === "true";
-    const profile = await Profile.findOne({ user: req.userId });
-    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    const profile = await findProfileOr404(req.userId, res);
+    if (!profile) return;
 
     const cached = profile.roadmap;
     const sameRole = cached?.targetRole === targetRole;
@@ -93,7 +89,7 @@ Return ONLY JSON in this shape, max 6 steps, ordered by priority:
   ]
 }`;
 
-    const result = await callGemini("roadmap", prompt, {
+    const result = await callAI("roadmap", prompt, {
       jsonSchemaHint: true,
       fallbackData: sameRole ? cached?.toObject() : null,
     });
@@ -114,6 +110,62 @@ Return ONLY JSON in this shape, max 6 steps, ordered by priority:
     }
 
     res.json(roadmap);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Career Path Ladder (title progression toward the target role) ---
+router.post("/career-path", async (req, res) => {
+  try {
+    const { targetRole } = req.body;
+    if (!targetRole) return res.status(400).json({ error: "targetRole is required" });
+
+    const forceRefresh = req.query.refresh === "true";
+    const profile = await findProfileOr404(req.userId, res);
+    if (!profile) return;
+
+    const cached = profile.careerPath;
+    const sameRole = cached?.targetRole === targetRole;
+
+    if (cached && sameRole && !forceRefresh && !isStale(cached.computedAt)) {
+      return res.json({ ...cached.toObject(), fromCache: true });
+    }
+
+    const currentSkills = getMergedSkills(profile);
+
+    const prompt = `A student/early-career candidate with these current skills: ${JSON.stringify(currentSkills)} wants to reach this target role: "${targetRole}".
+
+Return a realistic title-progression career ladder from an entry point toward and slightly beyond the target role (4-6 rungs). Use standard industry title conventions for this field (e.g. Junior -> Mid -> Senior -> Staff/Lead, or the equivalent progression for the given field if it isn't software engineering).
+
+Return ONLY JSON in this exact shape:
+{
+  "ladder": [
+    { "title": "...", "yearsRange": "e.g. 0-1 yrs", "description": "1 sentence on what changes at this level (scope, ownership, expectations)" }
+  ]
+}`;
+
+    const result = await callAI("career_path", prompt, {
+      jsonSchemaHint: true,
+      fallbackData: sameRole ? cached?.toObject() : null,
+    });
+
+    if (!result.success && !result.data) {
+      return res.status(503).json({ error: result.error });
+    }
+
+    const careerPath = {
+      targetRole,
+      ladder: Array.isArray(result.data?.ladder) ? result.data.ladder : [],
+      computedAt: result.success ? new Date() : cached?.computedAt,
+    };
+
+    if (result.success) {
+      profile.careerPath = careerPath;
+      await profile.save();
+    }
+
+    res.json(careerPath);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
