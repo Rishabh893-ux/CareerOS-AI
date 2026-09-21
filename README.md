@@ -137,15 +137,19 @@ To keep API usage predictable on a free-tier Groq key, CareerOS AI applies a mul
 See the [live demo](https://careeros-ai-phi.vercel.app) for the current UI.
 
 **Overview Dashboard** — career score, AI insights, skills, and GitHub activity at a glance.
+
 ![Dashboard](docs/screenshots/dashboard.png)
 
 **Career Path Ladder** — title progression toward a target role, alongside the skill-gap roadmap.
+
 ![Career Path Ladder](docs/screenshots/career-path-ladder.png)
 
 **Cover Letter Generator** — a tailored draft generated from the candidate's real profile data.
+
 ![Cover Letter Generator](docs/screenshots/cover-letter-generator.png)
 
 **Company Research Brief** — AI-generated prep talking points and smart questions for any company.
+
 ![Company Research Brief](docs/screenshots/company-research-brief.png)
 
 ---
