@@ -13,7 +13,7 @@ interface MatchInsightsModalProps {
 export default function MatchInsightsModal({ job, onClose }: MatchInsightsModalProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="glass-panel p-6 w-full max-w-2xl max-h-[85vh] flex flex-col">
+      <div className="premium-card p-6 w-full max-w-2xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between mb-6 shrink-0">
           <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Sparkles className="text-accent" />

@@ -21,11 +21,11 @@ export function GrowthRoadmapCard({
   onGenerateRoadmap,
 }: GrowthRoadmapCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col">
+    <div className="premium-card p-6 flex flex-col">
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-            <Map size={14} className="text-accent" />
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+            <Map size={16} className="text-accent" />
           </div>
           <span className="section-heading">Growth Roadmap</span>
         </div>

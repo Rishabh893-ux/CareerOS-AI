@@ -7,12 +7,15 @@ interface AiInsightsCardProps {
 
 export function AiInsightsCard({ careerScore }: AiInsightsCardProps) {
   return (
-    <div className="metric-card p-6 col-span-2">
-      <div className="flex items-center gap-2 mb-5">
-        <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-          <Sparkles size={14} className="text-accent" />
+    <div className="premium-card p-6 col-span-2">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+            <Sparkles size={16} className="text-accent" />
+          </div>
+          <span className="section-heading">AI Insights & Recommendations</span>
         </div>
-        <span className="section-heading">AI Insights & Recommendations</span>
+        <span className="premium-badge">AI Powered</span>
       </div>
 
       {careerScore ? (

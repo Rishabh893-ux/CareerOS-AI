@@ -10,7 +10,7 @@ interface CareerScoreCardProps {
 
 export function CareerScoreCard({ careerScore, refreshingScore, onRecalculate }: CareerScoreCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col items-center">
+    <div className="premium-card p-6 flex flex-col items-center">
       <div className="flex items-center justify-between w-full mb-2">
         <span className="section-heading"><TrendingUp size={12} className="text-accent" /> Career Score</span>
         <button onClick={onRecalculate} disabled={refreshingScore}

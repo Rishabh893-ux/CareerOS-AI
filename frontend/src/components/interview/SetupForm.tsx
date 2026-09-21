@@ -27,7 +27,7 @@ export default function SetupForm({
   onSubmit,
 }: SetupFormProps) {
   return (
-    <div className="glass-panel p-6 lg:col-span-1 h-fit">
+    <div className="premium-card p-6 lg:col-span-1 h-fit">
       <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 mb-4">
         <MessageSquare size={18} className="text-accent animate-float" />
         <span>Configure Mock Board</span>

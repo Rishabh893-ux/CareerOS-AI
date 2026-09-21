@@ -38,7 +38,7 @@ export default function QuestionCard({
   const totalQuestions = session.format === "MCQ" ? session.mcqQuestions.length : session.questions.length;
 
   return (
-    <div className="glass-panel p-8 space-y-6">
+    <div className="premium-card p-8 space-y-6">
       {/* Exam header progress indicator */}
       <div className="flex justify-between items-center text-xs text-muted font-semibold">
         <span>{session.type} Mock ({session.format})</span>

@@ -12,7 +12,7 @@ export function SkillsPanel({ allSkills, displaySkills, skillsExpanded, onToggle
   if (allSkills.length === 0) return null;
 
   return (
-    <div className="metric-card p-6">
+    <div className="premium-card p-6">
       <div className="flex items-center justify-between mb-4">
         <span className="section-heading"><Zap size={12} className="text-accent" /> Your Skills ({allSkills.length})</span>
         {allSkills.length > 10 && (
