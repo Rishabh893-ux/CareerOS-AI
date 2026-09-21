@@ -10,19 +10,21 @@ interface ResumeBuilderCardProps {
 
 export function ResumeBuilderCard({ allExtractedSkills }: ResumeBuilderCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col justify-between">
+    <div className="premium-card p-6 flex flex-col justify-between">
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-7 h-7 rounded-lg bg-success/10 border border-success/30 flex items-center justify-center">
-            <ShieldCheck size={14} className="text-success" />
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-9 h-9 rounded-xl bg-success/10 border border-success/30 flex items-center justify-center">
+            <ShieldCheck size={16} className="text-success" />
           </div>
           <span className="section-heading">Resume Builder</span>
         </div>
-        <p className="text-xs text-muted mt-1 leading-relaxed">
+        <p className="text-xs text-muted mt-2 leading-relaxed">
           Create a perfectly formatted, ATS-compliant PDF resume from your profile. Live preview included.
         </p>
 
-        <div className="space-y-1.5 bg-surface-alt border border-line p-3.5 rounded-xl mt-4 text-xs text-muted">
+        <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent my-4" />
+
+        <div className="space-y-1.5 bg-surface-alt border border-line p-3.5 rounded-xl text-xs text-muted">
           <p className="flex items-center gap-1.5"><CheckCircle size={11} className="text-success" /> Multiple ATS Templates</p>
           <p className="flex items-center gap-1.5"><CheckCircle size={11} className="text-success" /> Live Interactive Preview</p>
           <p className="flex items-center gap-1.5"><CheckCircle size={11} className="text-success" /> Standard section headings</p>

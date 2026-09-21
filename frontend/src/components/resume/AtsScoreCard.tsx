@@ -11,14 +11,14 @@ interface AtsScoreCardProps {
 
 export function AtsScoreCard({ atsResult, scoreColor }: AtsScoreCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-7 h-7 rounded-lg bg-warning/10 border border-warning/30 flex items-center justify-center">
-          <Flame size={14} className="text-warning" />
+    <div className="premium-card p-6 flex flex-col">
+      <div className="flex items-center gap-3 mb-1">
+        <div className="w-9 h-9 rounded-xl bg-warning/10 border border-warning/30 flex items-center justify-center">
+          <Flame size={16} className="text-warning" />
         </div>
         <span className="section-heading">ATS Score</span>
       </div>
-      <p className="text-xs text-muted mt-1 leading-relaxed">
+      <p className="text-xs text-muted mt-2 leading-relaxed">
         Overall compatibility rating.
       </p>
 

@@ -32,13 +32,21 @@ export function AtsCheckerForm({
   onSubmit,
 }: AtsCheckerFormProps) {
   return (
-    <div className="metric-card p-6 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-          <Sparkles size={14} className="text-accent" />
+    <div className="premium-card p-6 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/30 flex items-center justify-center">
+            <Sparkles size={16} className="text-accent" />
+          </div>
+          <div>
+            <span className="section-heading">Run ATS Check</span>
+            <p className="text-[11px] text-muted mt-0.5">Score your resume against a real job description</p>
+          </div>
         </div>
-        <span className="section-heading">Run ATS Check</span>
+        <span className="premium-badge">AI Powered</span>
       </div>
+
+      <div className="h-px bg-gradient-to-r from-transparent via-line to-transparent" />
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4 flex-1">
         {/* Optional targeted resume upload */}
@@ -85,7 +93,7 @@ export function AtsCheckerForm({
             placeholder="Paste the full job description here..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
-            className="w-full flex-1 bg-surface-alt border border-line rounded-xl px-4 py-3 text-xs text-foreground placeholder:text-muted resize-none leading-relaxed min-h-[160px]"
+            className="w-full flex-1 bg-surface-alt border border-line rounded-xl px-4 py-3 text-xs text-foreground placeholder:text-muted resize-none leading-relaxed min-h-[160px] focus:outline-none focus:border-accent transition-colors"
           />
         </div>
 
