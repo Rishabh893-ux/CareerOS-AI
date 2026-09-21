@@ -159,3 +159,11 @@ Contributions are welcome — open a pull request or file an issue for bugs or f
 
 ## 📜 License
 [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+Built with care by **[Rishabh Kasaudhan](https://github.com/Rishabh893-ux)**
+
+</div>
