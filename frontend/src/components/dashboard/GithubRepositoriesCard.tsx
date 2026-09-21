@@ -7,7 +7,7 @@ interface GithubRepositoriesCardProps {
 
 export function GithubRepositoriesCard({ repos }: GithubRepositoriesCardProps) {
   return (
-    <div className="metric-card p-6 flex flex-col">
+    <div className="premium-card p-6 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <span className="section-heading"><Code size={12} /> GitHub Repositories ({repos.length})</span>
       </div>

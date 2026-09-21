@@ -23,7 +23,7 @@ export default function SearchPanel({
   onShowAddForm,
 }: SearchPanelProps) {
   return (
-    <div className="glass-panel p-6 h-fit">
+    <div className="premium-card p-6 h-fit">
       <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 mb-4">
         <Search size={18} className="text-accent animate-float" />
         <span>Search Live Vacancies</span>

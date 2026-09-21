@@ -8,7 +8,7 @@ interface ResultsViewProps {
 
 export default function ResultsView({ session }: ResultsViewProps) {
   return (
-    <div className="glass-panel p-8 space-y-6">
+    <div className="premium-card p-8 space-y-6">
       <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
         <CheckCircle2 size={22} className="text-success" />
         <span>Evaluation Results</span>

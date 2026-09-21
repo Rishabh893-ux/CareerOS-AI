@@ -10,7 +10,7 @@ interface JournalListProps {
 
 export default function JournalList({ sessions, onSelectSession, onDeleteSession }: JournalListProps) {
   return (
-    <div className="glass-panel p-6 lg:col-span-2 flex flex-col min-h-[380px] max-h-[440px]">
+    <div className="premium-card p-6 lg:col-span-2 flex flex-col min-h-[380px] max-h-[440px]">
       <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
         Interview Journal ({sessions.length})
       </h3>

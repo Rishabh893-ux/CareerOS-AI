@@ -34,7 +34,7 @@ export default function AddJobModal({
 }: AddJobModalProps) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="glass-panel p-6 w-full max-w-sm">
+      <div className="premium-card p-6 w-full max-w-sm">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Track Custom Application</h3>
         <div className="space-y-4">
           <input

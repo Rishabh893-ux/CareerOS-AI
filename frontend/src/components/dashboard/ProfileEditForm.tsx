@@ -69,7 +69,7 @@ export function ProfileEditForm({
   onCancel,
 }: ProfileEditFormProps) {
   return (
-    <div className="glass-panel p-8 max-w-2xl mx-auto">
+    <div className="premium-card p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-accent brand-mark flex items-center justify-center shadow-lg">

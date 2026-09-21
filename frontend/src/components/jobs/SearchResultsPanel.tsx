@@ -11,7 +11,7 @@ interface SearchResultsPanelProps {
 
 export default function SearchResultsPanel({ searchResults, onTrackJob }: SearchResultsPanelProps) {
   return (
-    <div className="glass-panel p-6 flex flex-col min-h-[500px] max-h-[700px]">
+    <div className="premium-card p-6 flex flex-col min-h-[500px] max-h-[700px]">
       <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
         Available Postings ({searchResults.length})
       </h3>
