@@ -3,9 +3,20 @@ const { callAI } = require("./aiService");
 const { getMergedSkills } = require("./profileUtils");
 const { fallbackKeywords } = require("./atsAnalyzer");
 
-// Profiles filled in by hand have no parsed resume text; build one from their fields.
-function profileAsText(profile) {
+// Profiles filled in by hand have no parsed resume text; build one from their
+// fields. Contact details live on the User, so pass it for the ATS contact checks.
+function profileAsText(profile, user = null) {
   const lines = [];
+  if (user?.name) lines.push(user.name);
+  const contact = [
+    user?.email,
+    profile.phone,
+    profile.location,
+    user?.linkedinUrl,
+    user?.githubUsername ? `github.com/${user.githubUsername}` : "",
+    profile.portfolioUrl,
+  ].filter(Boolean);
+  if (contact.length) lines.push(contact.join(" | "));
   if (profile.careerGoal) lines.push("Summary", profile.careerGoal);
   const skills = getMergedSkills(profile);
   if (skills.length) lines.push("Skills", skills.join(", "));
