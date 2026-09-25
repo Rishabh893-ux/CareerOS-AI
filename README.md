@@ -155,23 +155,25 @@ All screenshots show the built-in demo account.
 
 ```mermaid
 flowchart LR
-    subgraph Client["Next.js 16 client"]
-        UI["Pages and components"] --> API["lib/api.ts<br/>(auth, errors, uploads)"]
-    end
+    Client["Next.js frontend"]
+    Routes["Express API routes"]
+    Scoring["Scoring services"]
+    AI["AI service with quota and cache"]
+    Mongo[("MongoDB Atlas")]
+    Files[("Cloudinary")]
+    Groq["Groq API"]
+    GitHubAPI["GitHub API"]
+    Adzuna["Adzuna API"]
 
-    API -- "REST / JSON (JWT)" --> Express
-
-    subgraph Server["Express backend"]
-        Express["Routes"] --> Scoring["Scoring services<br/>atsAnalyzer · githubScoring · jobMatchService"]
-        Express --> AI["aiService<br/>quota · rate limit · cache fallback"]
-        Scoring --> AI
-    end
-
-    Express --> Mongo[("MongoDB Atlas")]
-    Express --> Cloudinary[("Cloudinary")]
-    AI --> Groq["Groq API"]
-    Scoring --> GitHub["GitHub API"]
-    Express --> Adzuna["Adzuna API"]
+    Client -->|REST with JWT| Routes
+    Routes --> Scoring
+    Routes --> AI
+    Scoring --> AI
+    Routes --> Mongo
+    Routes --> Files
+    Routes --> Adzuna
+    Scoring --> GitHubAPI
+    AI --> Groq
 ```
 
 - **Every AI call goes through one service** (`aiService.js`), where the rate limiting, daily quota and cache fallback live.
