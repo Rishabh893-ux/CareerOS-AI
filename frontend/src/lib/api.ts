@@ -6,8 +6,11 @@ export const API_BASE = _apiBase;
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  // FormData bodies (file uploads) need the browser to set its own multipart
+  // Content-Type with the boundary, so only default to JSON for other bodies.
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string> || {}),
   };

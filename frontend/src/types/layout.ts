@@ -11,6 +11,7 @@ export interface NavItem {
 }
 
 export interface UserData {
+  _id?: string;
   name?: string;
   username?: string;
 }

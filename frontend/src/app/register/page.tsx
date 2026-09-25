@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Sparkles, AlertCircle, User } from "lucide-react";
-import { saveToken, API_BASE } from "@/app/api";
+import { saveToken, API_BASE } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -64,9 +64,9 @@ export default function RegisterPage() {
           <div className="w-12 h-12 rounded-2xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast text-xl mb-4">
             C
           </div>
-          <h2 className="font-heading text-2xl font-bold">
+          <h1 className="font-heading text-2xl font-bold">
             Create an Account
-          </h2>
+          </h1>
           <p className="text-sm text-muted mt-1">Get started with CareerOS AI for free</p>
         </div>
 
@@ -79,19 +79,21 @@ export default function RegisterPage() {
             </h3>
 
             {error && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
-                <AlertCircle size={18} className="shrink-0" />
+              <div role="alert" className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
+                <AlertCircle size={18} className="shrink-0" aria-hidden />
                 <span>{error}</span>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+              <label htmlFor="register-name" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Full Name
               </label>
               <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                 <User size={16} className="text-muted" />
                 <input
+                  id="register-name"
+                  autoComplete="name"
                   type="text"
                   placeholder="John Doe"
                   value={name}
@@ -103,12 +105,14 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+              <label htmlFor="register-email" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Email Address
               </label>
               <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                 <Mail size={16} className="text-muted" />
                 <input
+                  id="register-email"
+                  autoComplete="email"
                   type="email"
                   placeholder="name@example.com"
                   value={email}
@@ -120,12 +124,14 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+              <label htmlFor="register-password" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Password
               </label>
               <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                 <Lock size={16} className="text-muted" />
                 <input
+                  id="register-password"
+                  autoComplete="new-password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
@@ -137,12 +143,14 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+              <label htmlFor="register-confirm" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                 Confirm Password
               </label>
               <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                 <Lock size={16} className="text-muted" />
                 <input
+                  id="register-confirm"
+                  autoComplete="new-password"
                   type="password"
                   placeholder="••••••••"
                   value={confirmPassword}

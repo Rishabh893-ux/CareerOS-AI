@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
@@ -10,7 +10,7 @@ import {
   Globe,
   Mail,
 } from "lucide-react";
-import { fetchWithAuth, logout } from "@/app/api";
+import { fetchWithAuth, logout } from "@/lib/api";
 import SettingsModal from "./SettingsModal";
 import ThemeToggleButton from "./layout/ThemeToggleButton";
 import Sidebar from "./layout/Sidebar";
@@ -21,11 +21,14 @@ import type { ChatMessage, NavItem, UserData } from "@/types/layout";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-const PAGE_TITLES: Record<string, string> = {
-  "/": "Overview Dashboard",
-  "/resume": "Resume & ATS Checker",
-  "/interview": "Mock Interviews",
-  "/jobs": "Job Tracker",
+// Title + one line on what the page is for, shown in the header.
+const PAGES: Record<string, { title: string; description: string }> = {
+  "/": { title: "Dashboard", description: "Your career score, skills and growth plan at a glance" },
+  "/resume": { title: "Resume & ATS", description: "Parse your resume and check it against real job descriptions" },
+  "/resume/builder": { title: "Resume Builder", description: "Build an ATS-friendly resume from your profile" },
+  "/interview": { title: "Mock Interviews", description: "Practice technical and HR rounds with AI feedback" },
+  "/outreach": { title: "Outreach AI", description: "Draft personalized outreach and research companies" },
+  "/jobs": { title: "Job Tracker", description: "Find openings and track every application in one place" },
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +36,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Below the md breakpoint the sidebar is a drawer; track the breakpoint to know which
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => { setIsMobile(media.matches); if (!media.matches) setMobileNavOpen(false); };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileNavOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileNavOpen]);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [userData, setUserData] = useState<UserData>({});
@@ -43,6 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [loadingChat, setLoadingChat] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const closeCopilot = useCallback(() => setCopilotOpen(false), []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -55,7 +75,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       fetchWithAuth("/auth/me", { method: "GET" })
         .then(data => setUserData(data))
-        .catch(console.error);
+        .catch((err: unknown) => {
+          // Token is validly signed but its account no longer exists (e.g. the
+          // database was reset) — every other request would 404, so sign out.
+          if (err instanceof Error && err.message === "User not found") logout();
+          else console.error(err);
+        });
     }
   }, [pathname, router]);
 
@@ -65,8 +90,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Mock Interviews", href: "/interview", icon: MessageSquare },
     { name: "Outreach AI", href: "/outreach", icon: Mail },
     { name: "Job Tracker", href: "/jobs", icon: Briefcase },
-    userData?.username
-      ? { name: "Public Portfolio", href: `/p/${userData.username}`, icon: Globe, external: true }
+    // The public route accepts a username or the account id, so the link
+    // works before a username is chosen; the username just makes it prettier.
+    userData?.username || userData?._id
+      ? { name: "Public Portfolio", href: `/p/${userData.username || userData._id}`, icon: Globe, external: true }
       : {
           name: "Public Portfolio",
           href: "/p",
@@ -92,12 +119,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const pageTitle = PAGE_TITLES[pathname] || pathname.replace("/", "").replace(/-/g, " ");
+  const page = PAGES[pathname] || { title: pathname.replace("/", "").replace(/-/g, " "), description: "" };
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center" role="status" aria-label="Loading">
           {[0, 1, 2].map((i) => (
             <div key={i} className="w-2.5 h-2.5 rounded-full bg-accent animate-bounce"
               style={{ animationDelay: `${i * 0.15}s` }} />
@@ -117,9 +144,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex relative overflow-hidden">
+    <div className="h-dvh bg-background text-foreground flex relative overflow-hidden">
+      {mobileNavOpen && <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setMobileNavOpen(false)} aria-hidden />}
       <Sidebar
-        sidebarOpen={sidebarOpen}
+        sidebarOpen={sidebarOpen || isMobile}
+        mobileOpen={mobileNavOpen}
+        isMobile={isMobile}
+        onCloseMobile={() => setMobileNavOpen(false)}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         pathname={pathname}
         navItems={navItems}
@@ -128,9 +159,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onLogout={logout}
       />
 
-      <main className="flex-1 flex flex-col min-h-screen relative z-10 overflow-hidden">
+      <main className="flex-1 min-w-0 flex flex-col min-h-0 relative z-10 overflow-hidden">
         <Header
-          pageTitle={pageTitle}
+          pageTitle={page.title}
+          pageDescription={page.description}
+          onOpenNav={() => setMobileNavOpen(true)}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenCopilot={() => setCopilotOpen(true)}
@@ -139,8 +172,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           userData={userData}
         />
 
-        <div className="flex-1 p-7 overflow-y-auto max-w-7xl w-full mx-auto">
-          {children}
+        {/* Scroll area spans the full width so the scrollbar sits at the window edge */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            {children}
+          </div>
         </div>
       </main>
 
@@ -152,7 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <CopilotDrawer
         isOpen={copilotOpen}
-        onClose={() => setCopilotOpen(false)}
+        onClose={closeCopilot}
         chatMessages={chatMessages}
         chatInput={chatInput}
         onChangeInput={setChatInput}
