@@ -16,8 +16,12 @@ const jobApplicationSchema = new mongoose.Schema(
     jobDescription: { type: String }, // Store the actual job posting text
     // Match fields
     matchStatus: { type: String, enum: ["pending", "completed", "failed"] },
-    matchPercentage: { type: Number },
+    matchPercentage: { type: Number }, // keyword coverage, required skills weighted double
+    matchedSkills: [{ type: String }],
     missingSkills: [{ type: String }],
+    keywordSource: { type: String }, // "ai" or "fallback" (see services/jobKeywords.js)
+    matchError: { type: String },
+    matchedAt: { type: Date },
     strengths: [{ type: String }],
     weaknesses: [{ type: String }],
     tips: [{ type: String }],

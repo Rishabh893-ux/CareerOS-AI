@@ -2,7 +2,7 @@ const express = require("express");
 const Profile = require("../models/Profile");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
-const { findProfileOr404 } = require("../services/profileUtils");
+const { findProfileOr404, getMergedSkills } = require("../services/profileUtils");
 
 const router = express.Router();
 
@@ -17,8 +17,13 @@ router.get("/public/:username", async (req, res) => {
     }).select("name email githubUsername linkedinUrl");
     if (!user) return res.status(404).json({ error: "Portfolio not found" });
 
-    const profile = await Profile.findOne({ user: user._id }).select("education skills projects careerGoal experience certifications githubAnalysis careerScore location portfolioUrl resumeUrl");
+    const profile = await Profile.findOne({ user: user._id }).select("education skills resumeExtractedSkills projects careerGoal experience certifications githubAnalysis careerScore location portfolioUrl resumeUrl");
     if (!profile) return res.status(404).json({ error: "Profile not found" });
+
+    // Show resume-extracted skills too, same as the dashboard does.
+    const publicProfile = profile.toObject();
+    publicProfile.skills = getMergedSkills(profile);
+    delete publicProfile.resumeExtractedSkills;
 
     res.json({
       user: {
@@ -26,7 +31,7 @@ router.get("/public/:username", async (req, res) => {
         githubUsername: user.githubUsername,
         linkedinUrl: user.linkedinUrl
       },
-      profile
+      profile: publicProfile
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -47,7 +52,7 @@ router.get("/", async (req, res) => {
 
 router.put("/", async (req, res) => {
   try {
-    const allowedFields = ["education", "skills", "projects", "careerGoal", "experience", "certifications", "phone", "location", "portfolioUrl"];
+    const allowedFields = ["education", "skills", "resumeExtractedSkills", "projects", "careerGoal", "experience", "certifications", "phone", "location", "portfolioUrl"];
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -65,29 +70,5 @@ router.put("/", async (req, res) => {
   }
 });
 
-// Get linked social handles
-router.get("/links", async (req, res) => {
-  try {
-    const user = await User.findById(req.userId).select("githubUsername linkedinUrl");
-    res.json({ githubUsername: user?.githubUsername || "", linkedinUrl: user?.linkedinUrl || "" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Link GitHub/LinkedIn handles - stored on User, not Profile
-router.put("/links", async (req, res) => {
-  try {
-    const { githubUsername, linkedinUrl } = req.body;
-    const updates = {};
-    if (githubUsername !== undefined) updates.githubUsername = githubUsername;
-    if (linkedinUrl !== undefined) updates.linkedinUrl = linkedinUrl;
-
-    const user = await User.findByIdAndUpdate(req.userId, updates, { new: true });
-    res.json({ githubUsername: user.githubUsername, linkedinUrl: user.linkedinUrl });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 module.exports = router;
