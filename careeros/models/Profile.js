@@ -64,10 +64,45 @@ const profileSchema = new mongoose.Schema(
       computedAt: Date,
     },
 
+    // Latest ATS check (see routes/resume.js); raw resume text isn't duplicated here
+    lastAtsCheck: {
+      mode: String, // "match" (against a JD) or "health" (no JD)
+      score: Number,
+      breakdown: { keywords: Number, format: Number },
+      role: String,
+      keywords: {
+        required: [{ _id: false, term: String, found: Boolean }],
+        preferred: [{ _id: false, term: String, found: Boolean }],
+      },
+      missingKeywords: [String],
+      checks: [{ _id: false, key: String, label: String, pass: Boolean, partial: Boolean, detail: String }],
+      suggestions: [String],
+      keywordSource: String,
+      resumeSource: String,
+      checkedAt: Date,
+    },
     githubAnalysis: {
       score: Number,
       summary: String,
       topLanguages: [String],
+      // How the score was built (see services/githubScoring.js)
+      signals: [{ _id: false, key: String, label: String, score: Number, max: Number, detail: String }],
+      recommendations: [String],
+      metrics: {
+        repoCount: Number,
+        totalStars: Number,
+        followers: Number,
+        recentlyPushed: Number,
+        daysSinceLastPush: Number,
+        readmeChecked: Number,
+        readmeCount: Number,
+        descriptionCount: Number,
+        demoCount: Number,
+        topicsCount: Number,
+        licenseCount: Number,
+        hasProfileReadme: Boolean,
+        languages: [{ _id: false, name: String, share: Number }],
+      },
       repos: [
         {
           name: String,
@@ -75,7 +110,9 @@ const profileSchema = new mongoose.Schema(
           language: String,
           stars: Number,
           updatedAt: String,
-          html_url: String
+          html_url: String,
+          homepage: String,
+          hasReadme: Boolean,
         }
       ],
       computedAt: Date,

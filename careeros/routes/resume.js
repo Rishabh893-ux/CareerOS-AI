@@ -1,11 +1,12 @@
 const express = require("express");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
-const pdfParseLib = require("pdf-parse");
-const pdfParse = pdfParseLib.default || pdfParseLib; // handle both ESM default and CJS export
 const Profile = require("../models/Profile");
 const authMiddleware = require("../middleware/auth");
-const { chatCompletion, VISION_MODEL, callAI } = require("../services/aiService");
+const { callAI } = require("../services/aiService");
+const { extractResumeFileText } = require("../services/resumeTextExtractor");
+const { analyzeAts } = require("../services/atsAnalyzer");
+const { extractJobKeywords, profileAsText } = require("../services/jobKeywords");
 const { getMergedSkills } = require("../services/profileUtils");
 
 const router = express.Router();
@@ -34,131 +35,6 @@ const upload = multer({
   },
 });
 
-// ── Helper: extract text from PDF buffer via pdf-parse ──
-async function extractTextFromPdf(buffer) {
-  try {
-    const parsed = await pdfParse(buffer);
-    if (parsed.text && parsed.text.trim().length > 50) {
-      return parsed.text.trim();
-    }
-    throw new Error("PDF text too short");
-  } catch (err) {
-    console.warn("[PDF Parse] pdf-parse failed or empty");
-    return null;
-  }
-}
-
-// ── Shared pdfjs-dist loader ──
-// pdfjs-dist's Node "fake worker" caches its handler on a process-wide global
-// (globalThis.pdfjsWorker), not per module instance. If more than one
-// pdfjs-dist version ever runs in this process, whichever loads its worker
-// first "poisons" that global for every other version afterwards, causing a
-// hard "API version does not match Worker version" crash. So this app must
-// only ever load ONE pdfjs-dist instance - always through this function -
-// rather than pulling in a second copy via another package (e.g. pdf-to-img).
-let pdfjsLibPromise = null;
-function getPdfjsLib() {
-  if (!pdfjsLibPromise) {
-    pdfjsLibPromise = import("pdfjs-dist/legacy/build/pdf.mjs").then((pdfjsLib) => {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = require("url").pathToFileURL(
-        require.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")
-      ).href;
-      return pdfjsLib;
-    });
-  }
-  return pdfjsLibPromise;
-}
-
-// ── Helper: extract text from PDF buffer via pdfjs-dist's own text layer API ──
-// This is a text-only extraction that never touches Canvas/rendering, so it's
-// far more robust than the rasterization path below - it recovers text from
-// PDFs that trip up pdf-parse (unusual encodings, ligatures, certain embedded
-// fonts) without needing the Canvas/clip-path machinery at all.
-async function extractTextViaPdfJs(buffer) {
-  try {
-    const pdfjsLib = await getPdfjsLib();
-    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), isEvalSupported: false }).promise;
-
-    const pageTexts = [];
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      pageTexts.push(content.items.map((item) => item.str).join(" "));
-    }
-
-    const text = pageTexts.join("\n\n").trim();
-    return text.length > 50 ? text : null;
-  } catch (err) {
-    console.warn("[PDF Parse] pdfjs-dist text extraction failed:", err.message);
-    return null;
-  }
-}
-
-// ── Helper: extract text from a single image buffer via Groq Vision (qwen3.8-27b) ──
-async function extractTextFromImageBuffer(buffer, mimeType) {
-  const base64 = buffer.toString("base64");
-
-  const text = await chatCompletion([{
-    role: "user",
-    content: [
-      { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
-      { type: "text", text: "Extract ALL text from this resume image exactly as it appears. Return only the raw text content, no commentary." },
-    ],
-  }], { model: VISION_MODEL });
-
-  return text.trim();
-}
-
-// ── Helper: scanned/image-based PDF fallback ──
-// Groq has no native PDF/document input (only image_url), so a PDF that has
-// no real text layer gets rasterized page-by-page (via the same pdfjs-dist
-// instance as above, paired with @napi-rs/canvas) and each page is OCR'd
-// through Groq Vision instead.
-const MAX_VISION_PAGES = 5;
-
-async function extractTextFromScannedPdf(buffer) {
-  const pdfjsLib = await getPdfjsLib();
-  const { createCanvas } = require("@napi-rs/canvas");
-
-  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer), isEvalSupported: false }).promise;
-  const numPages = Math.min(doc.numPages, MAX_VISION_PAGES);
-
-  const pageTexts = [];
-  for (let i = 1; i <= numPages; i++) {
-    const page = await doc.getPage(i);
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = createCanvas(viewport.width, viewport.height);
-    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-    const pageText = await extractTextFromImageBuffer(canvas.toBuffer("image/png"), "image/png");
-    pageTexts.push(pageText);
-  }
-  return pageTexts.join("\n\n");
-}
-
-// ── Helper: extract text from an uploaded resume file (PDF or image) ──
-// PDFs try pdf-parse, then pdfjs-dist's own text layer as a second attempt
-// (recovers text pdf-parse chokes on, still no rendering involved), and only
-// fall back to rasterizing pages + Groq Vision if there's truly no text layer
-// (a scanned/image-only PDF). Images always go straight through Groq Vision.
-async function extractResumeFileText(file) {
-  const isPdf = file.mimetype === "application/pdf";
-  const isImage = file.mimetype.startsWith("image/");
-
-  if (isPdf) {
-    const text = await extractTextFromPdf(file.buffer);
-    if (text) return text;
-
-    const pdfjsText = await extractTextViaPdfJs(file.buffer);
-    if (pdfjsText) return pdfjsText;
-
-    console.log("[Resume] Falling back to Groq Vision (page rasterization) for scanned PDF");
-    return extractTextFromScannedPdf(file.buffer);
-  }
-  if (isImage) {
-    return extractTextFromImageBuffer(file.buffer, file.mimetype);
-  }
-  return "";
-}
 
 // ── POST /api/resume/upload — PDF or Image ──
 router.post("/upload", upload.single("resume"), async (req, res) => {
@@ -196,7 +72,7 @@ Return ONLY a valid JSON object matching this exact shape:
   "githubUrl": "Extracted GitHub URL, if any",
   "linkedinUrl": "Extracted LinkedIn URL, if any",
   "skills": ["skill1", "skill2"],
-  "careerGoal": "The candidate's objective or target role. Always prefix with 'Objective: '",
+  "careerGoal": "The candidate's objective or target role, as a short phrase",
   "education": [
     {
       "institute": "University Name",
@@ -255,9 +131,8 @@ Resume text:
 
     if (result.success && result.data && typeof result.data === "object") {
       let { skills, careerGoal, education, experience, certifications, projects, phone, location, portfolioUrl, githubUrl, linkedinUrl } = result.data;
-      if (typeof careerGoal === "string" && !careerGoal.startsWith("Objective: ")) {
-        careerGoal = `Objective: ${careerGoal}`;
-      }
+      // Store the goal as plain text; strip a label the model may add anyway.
+      careerGoal = typeof careerGoal === "string" ? careerGoal.replace(/^s*objectives*:s*/i, "").trim() : "";
 
       // Update basic fields on Profile
       const profileUpdates = {
@@ -292,7 +167,7 @@ Resume text:
 
       profile = await Profile.findOneAndUpdate(
         { user: req.userId },
-        { $set: profileUpdates },
+        { $set: profileUpdates, $unset: { lastAtsCheck: "" } }, // a new resume invalidates the last ATS check
         { new: true, upsert: true }
       );
       extractedSkills = profileUpdates.resumeExtractedSkills;
@@ -308,40 +183,13 @@ Resume text:
   }
 });
 
-// ── POST /api/resume/parse — raw text fallback ──
-router.post("/parse", async (req, res) => {
-  try {
-    const { resumeText } = req.body;
-    if (!resumeText) return res.status(400).json({ error: "resumeText is required" });
-
-    const prompt = `Extract a clean list of technical and professional skills from this resume text.
-Return ONLY a JSON array of strings, lowercase, no duplicates, no soft skills like "communication".
-Resume text:
-"""${resumeText.slice(0, 6000)}"""`;
-
-    const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true });
-    if (!result.success) return res.status(503).json({ error: result.error });
-
-    const skills = Array.isArray(result.data) ? result.data : [];
-    const profile = await Profile.findOneAndUpdate(
-      { user: req.userId },
-      { $set: { resumeExtractedSkills: skills, resumeLastParsedAt: new Date() } },
-      { new: true, upsert: true }
-    );
-
-    res.json({ extractedSkills: skills, profile });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ── DELETE /api/resume — remove parsed resume from profile ──
 router.delete("/", async (req, res) => {
   try {
     const profile = await Profile.findOneAndUpdate(
       { user: req.userId },
       { 
-        $unset: { resumeUrl: "", resumeRawText: "", resumeExtractedSkills: "", resumeLastParsedAt: "", phone: "", location: "", portfolioUrl: "" },
+        $unset: { resumeUrl: "", resumeRawText: "", resumeExtractedSkills: "", resumeLastParsedAt: "", phone: "", location: "", portfolioUrl: "", lastAtsCheck: "" },
         $set: { skills: [], education: [], experience: [], certifications: [], projects: [], careerGoal: "" }
       },
       { new: true }
@@ -353,71 +201,49 @@ router.delete("/", async (req, res) => {
 });
 
 // ── POST /api/resume/ats-check ──
+// Keyword coverage + format checks against the full resume text (see
+// services/atsAnalyzer.js). The AI is used only to pull keywords out of the
+// job description; with no JD this is a free "resume health" check.
+
 router.post("/ats-check", upload.single("resume"), async (req, res) => {
   try {
-    const { jobDescription = "Provide general feedback and a basic ATS score without a specific job description." } = req.body;
+    const jobDescription = (req.body.jobDescription || "").trim();
+    const profile = await Profile.findOne({ user: req.userId });
 
-    let candidateProfile = {};
-
-    // 1. If a file is uploaded, extract text directly from it
+    let resumeText;
+    let source;
     if (req.file) {
-      const resumeText = await extractResumeFileText(req.file);
-
+      resumeText = await extractResumeFileText(req.file);
       if (!resumeText || resumeText.length < 30) {
-        return res.status(422).json({ error: "Could not extract text from the uploaded file for ATS check." });
+        return res.status(422).json({ error: "Could not read text from that file. Try a text-based PDF rather than a scan." });
       }
-
-      candidateProfile = { resumeText };
-    } 
-    // 2. Otherwise fallback to the user's saved profile data
-    else {
-      const profile = await Profile.findOne({ user: req.userId });
-      if (!profile) return res.status(404).json({ error: "Profile not found. Please upload your resume first or attach one." });
-
-      candidateProfile = {
-        skills: getMergedSkills(profile),
-        education: profile.education || [],
-        projects: profile.projects || [],
-        careerGoal: profile.careerGoal || "",
-        resumeText: profile.resumeRawText || "",
-      };
+      source = "upload";
+    } else {
+      if (!profile) return res.status(404).json({ error: "Upload a resume first, or attach one to this check." });
+      resumeText = profile.resumeRawText || profileAsText(profile);
+      source = profile.resumeRawText ? "profile-resume" : "profile-fields";
+      if (resumeText.length < 30) return res.status(422).json({ error: "Your profile is too empty to check. Upload a resume first." });
     }
 
-    const prompt = `You are an expert ATS (Applicant Tracking System) parser and technical recruiter.
-Compare this candidate's profile against the job description.
+    // A few words aren't a job description; treat them as none.
+    const hasJd = jobDescription.split(/\s+/).length >= 15;
+    const keywordList = hasJd ? await extractJobKeywords(jobDescription) : null;
+    const analysis = analyzeAts(resumeText, keywordList);
 
-Candidate Profile:
-${JSON.stringify({ ...candidateProfile, resumeText: candidateProfile.resumeText?.slice(0, 2000) })}
+    const result = {
+      ...analysis,
+      keywordSource: keywordList?.source || null,
+      resumeSource: source,
+      checkedAt: new Date(),
+    };
 
-Job Description:
-"""${jobDescription.slice(0, 4000)}"""
-
-Evaluate and return ONLY JSON in this exact shape:
-{
-  "score": <0-100 integer representing match quality>,
-  "missingKeywords": ["keyword1", "keyword2", ...],
-  "formattingFeedback": "1-2 sentences on resume structure and scan readability",
-  "suggestions": ["suggestion1", "suggestion2", ...]
-}`;
-
-    const result = await callAI("ats_check", prompt, { jsonSchemaHint: true });
-    
-    console.log("[ATS Check] Claude Success:", result.success, "Data:", result.data);
-
-    if (!result.success) return res.status(503).json({ error: result.error });
-
-    if (typeof result.data === "string") {
-      console.error("[ATS Check] Claude returned invalid JSON:", result.data);
-      return res.status(500).json({ error: "AI returned an invalid format. Please try again." });
+    // Remember the latest result so the page can show it after a reload.
+    if (profile) {
+      profile.lastAtsCheck = result;
+      await profile.save();
     }
 
-    res.json({
-      score: result.data.score || 0,
-      missingKeywords: Array.isArray(result.data.missingKeywords) ? result.data.missingKeywords : [],
-      formattingFeedback: result.data.formattingFeedback || "",
-      suggestions: Array.isArray(result.data.suggestions) ? result.data.suggestions : [],
-      rawExtractedText: candidateProfile.resumeText || "",
-    });
+    res.json({ ...result, rawExtractedText: resumeText });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -453,41 +279,6 @@ Original Text:
 
     const enhancedText = result.data.replace(/^[-*•]\s*/gm, '').trim();
     res.json({ enhancedText });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── POST /api/resume/tailor ──
-router.post("/tailor", async (req, res) => {
-  try {
-    const { jobDescription, profileData } = req.body;
-    if (!jobDescription || !profileData) return res.status(400).json({ error: "jobDescription and profileData required" });
-
-    const prompt = `You are an expert ATS optimizer. 
-Given the candidate's base profile and the target job description, re-order their skills, and suggest a tailored "Professional Summary". 
-Return ONLY JSON in this exact shape:
-{
-  "tailoredSummary": "A strong 2-3 sentence summary emphasizing alignment with the JD",
-  "recommendedSkills": ["skill1", "skill2"] // ordered by relevance to the JD, filtering out irrelevant ones
-}
-
-Job Description:
-"""${jobDescription.slice(0, 3000)}"""
-
-Candidate Profile:
-${JSON.stringify({
-  skills: profileData.skills,
-  summary: profileData.summary,
-  projects: profileData.projects?.map(p => p.title),
-  experience: profileData.experience?.map(e => e.role)
-})}
-`;
-
-    const result = await callAI("tailor_resume", prompt, { jsonSchemaHint: true });
-    if (!result.success) return res.status(503).json({ error: result.error });
-
-    res.json(result.data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
