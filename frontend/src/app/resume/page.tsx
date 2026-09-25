@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
-import { fetchWithAuth, API_BASE } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { Profile, AtsResult, ACCEPTED_TYPES } from "@/types/resume";
 import { ResumeParserCard } from "@/components/resume/ResumeParserCard";
 import { ResumeBuilderCard } from "@/components/resume/ResumeBuilderCard";
-import { AtsScoreCard } from "@/components/resume/AtsScoreCard";
 import { AtsCheckerForm } from "@/components/resume/AtsCheckerForm";
 import { DiagnosticReport } from "@/components/resume/DiagnosticReport";
 import { CoverLetterCard } from "@/components/resume/CoverLetterCard";
+import { mergeSkills } from "@/lib/skills";
 
 export default function ResumePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,6 +38,8 @@ export default function ResumePage() {
     try {
       const data = await fetchWithAuth("/profile");
       setProfile(data);
+      // Show the last saved check until a new one is run
+      if (data.lastAtsCheck?.checks) setAtsResult((prev) => prev ?? data.lastAtsCheck);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Failed to load profile.");
@@ -97,15 +99,7 @@ export default function ResumePage() {
     formData.append("resume", selectedFile);
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${API_BASE}/resume/upload`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      const data = await fetchWithAuth("/resume/upload", { method: "POST", body: formData });
 
       setProfile(data.profile);
       setSuccessMsg(`✅ Resume parsed! ${data.extractedSkills?.length || 0} skills extracted.`);
@@ -127,13 +121,7 @@ export default function ResumePage() {
     setError("");
     setSuccessMsg("");
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${API_BASE}/resume`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to remove resume");
+      const data = await fetchWithAuth("/resume", { method: "DELETE" });
 
       setProfile(data.profile);
       setSuccessMsg("✅ Saved resume removed successfully.");
@@ -174,15 +162,7 @@ export default function ResumePage() {
     }
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(`${API_BASE}/resume/ats-check`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "ATS Check failed");
+      const data = await fetchWithAuth("/resume/ats-check", { method: "POST", body: formData });
 
       setAtsResult(data);
     } catch (err: unknown) {
@@ -194,33 +174,30 @@ export default function ResumePage() {
     }
   };
 
-  const scoreColor = atsResult
-    ? atsResult.score >= 70 ? "text-success" : atsResult.score >= 45 ? "text-accent" : "text-danger"
-    : "text-muted";
 
-  const allExtractedSkills = [...new Set([...(profile?.skills || []), ...(profile?.resumeExtractedSkills || [])])];
+  const allExtractedSkills = mergeSkills(profile);
 
   return (
     <div className="space-y-6 animate-fade-in-up">
 
       {/* Alerts */}
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">
+        <div role="alert" className="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">
           <AlertCircle size={15} className="shrink-0" />
           <span className="flex-1">{error}</span>
-          <button onClick={() => setError("")}><X size={14} /></button>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error" className="p-1 rounded-lg hover:bg-danger/10"><X size={14} aria-hidden /></button>
         </div>
       )}
       {successMsg && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-success/10 border border-success/30 text-success text-sm">
+        <div role="status" className="flex items-center gap-3 p-4 rounded-2xl bg-success/10 border border-success/30 text-success text-sm">
           <CheckCircle size={15} className="shrink-0" />
           <span className="flex-1">{successMsg}</span>
-          <button onClick={() => setSuccessMsg("")}><X size={14} /></button>
+          <button type="button" onClick={() => setSuccessMsg("")} aria-label="Dismiss message" className="p-1 rounded-lg hover:bg-success/10"><X size={14} aria-hidden /></button>
         </div>
       )}
 
-      {/* ── TOP 3 CARDS ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* ── YOUR RESUME ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ResumeParserCard
           profile={profile}
           uploading={uploading}
@@ -239,11 +216,10 @@ export default function ResumePage() {
 
         <ResumeBuilderCard allExtractedSkills={allExtractedSkills} />
 
-        <AtsScoreCard atsResult={atsResult} scoreColor={scoreColor} />
       </div>
 
       {/* ── ATS CHECKER + RESULTS ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <AtsCheckerForm
           profile={profile}
           checkingAts={checkingAts}
@@ -258,7 +234,7 @@ export default function ResumePage() {
           onSubmit={handleCheckAts}
         />
 
-        <DiagnosticReport atsResult={atsResult} scoreColor={scoreColor} />
+        <DiagnosticReport atsResult={atsResult} />
       </div>
 
       {/* ── COVER LETTER GENERATOR ── */}

@@ -1,183 +1,169 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
-import { fetchWithAuth } from "@/app/api";
-import { Job, SearchResult } from "@/types/jobs";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
+import { fetchWithAuth } from "@/lib/api";
+import { Job, JobStatus, SearchResponse } from "@/types/jobs";
 import SearchPanel from "@/components/jobs/SearchPanel";
 import SearchResultsPanel from "@/components/jobs/SearchResultsPanel";
 import KanbanBoard from "@/components/jobs/KanbanBoard";
+import PipelineSummary from "@/components/jobs/PipelineSummary";
 import AddJobModal from "@/components/jobs/AddJobModal";
-import MatchInsightsModal from "@/components/jobs/MatchInsightsModal";
+import JobDetailModal from "@/components/jobs/JobDetailModal";
+
+const POLL_MS = 4000;
 
 export default function JobsPage() {
-  // Kanban tracker state
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  // Job search state
+  // Search
   const [searchTerm, setSearchTerm] = useState("");
   const [locationTerm, setLocationTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [search, setSearch] = useState<SearchResponse | null>(null);
   const [searching, setSearching] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState(true);
-  const [error, setError] = useState("");
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
 
-  // Match Modal states
-  const [activeMatchJob, setActiveMatchJob] = useState<Job | null>(null);
-  const [matchDesc, setMatchDesc] = useState("");
-  const [analyzingMatch, setAnalyzingMatch] = useState(false);
-
-  // Manual Add states
+  // Dialogs
+  const [openJobId, setOpenJobId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCompany, setNewCompany] = useState("");
   const [newRole, setNewRole] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newJobDescription, setNewJobDescription] = useState("");
-  const [newStatus, setNewStatus] = useState<Job["status"]>("Wishlist");
+  const [newStatus, setNewStatus] = useState<JobStatus>("Wishlist");
 
-  const loadJobs = async () => {
+  const loadJobs = useCallback(async () => {
     try {
-      const data = await fetchWithAuth("/jobs");
-      setJobs(data);
+      setJobs(await fetchWithAuth("/jobs"));
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Failed to load tracked jobs."); }
-    } finally {
-      setLoadingJobs(false);
+      if (err instanceof Error) setError(err.message || "Failed to load tracked jobs.");
     }
-  };
-
-  useEffect(() => {
-    loadJobs();
   }, []);
+
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+
+  // Matches run in the background; poll while any are pending
+  const hasPending = jobs.some((j) => j.matchStatus === "pending");
+  useEffect(() => {
+    if (!hasPending) return;
+    const timer = setInterval(loadJobs, POLL_MS);
+    return () => clearInterval(timer);
+  }, [hasPending, loadJobs]);
+
+  const trackedUrls = useMemo(() => new Set(jobs.map((j) => j.jobUrl).filter(Boolean) as string[]), [jobs]);
+  const openJob = jobs.find((j) => j._id === openJobId) || null;
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setSearching(true);
     setError("");
     try {
-      const data = await fetchWithAuth(`/jobs/search?what=${encodeURIComponent(searchTerm)}&where=${encodeURIComponent(locationTerm)}`);
-      setSearchResults(data);
+      setSearch(await fetchWithAuth(`/jobs/search?what=${encodeURIComponent(searchTerm)}&where=${encodeURIComponent(locationTerm)}`));
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Failed to fetch live job listings."); }
+      if (err instanceof Error) setError(err.message || "Failed to fetch job listings.");
     } finally {
       setSearching(false);
     }
   };
 
-  // HTML5 Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent, jobId: string) => {
-    e.dataTransfer.setData("jobId", jobId);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetStatus: Job["status"]) => {
-    e.preventDefault();
-    const jobId = e.dataTransfer.getData("jobId");
-    if (!jobId) return;
-
-    // Optimistic UI update
-    setJobs(prev => prev.map(j => j._id === jobId ? { ...j, status: targetStatus } : j));
-
+  const updateJob = async (id: string, updates: Partial<Job>): Promise<boolean> => {
+    const previous = jobs;
+    setJobs((prev) => prev.map((j) => (j._id === id ? { ...j, ...updates } : j))); // optimistic
     try {
-      await fetchWithAuth(`/jobs/${jobId}`, {
-        method: "PUT",
-        body: JSON.stringify({ status: targetStatus }),
-      });
+      const saved: Job = await fetchWithAuth(`/jobs/${id}`, { method: "PUT", body: JSON.stringify(updates) });
+      setJobs((prev) => prev.map((j) => (j._id === id ? saved : j)));
+      return true;
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Failed to update job status."); }
-      loadJobs(); // revert if failed
+      setJobs(previous);
+      if (err instanceof Error) setError(err.message || "Failed to update the job.");
+      return false;
     }
   };
 
-  const handleAddJob = async (company: string, role: string, url: string, status: Job["status"], jobDescription?: string) => {
+  const handleAddJob = async (company: string, role: string, url: string, status: JobStatus, jobDescription?: string) => {
     setError("");
+    setTrackingUrl(url || null);
     try {
-      const newJob = await fetchWithAuth("/jobs", {
+      const newJob: Job = await fetchWithAuth("/jobs", {
         method: "POST",
-        body: JSON.stringify({ company, role, jobUrl: url, status, jobDescription }),
+        body: JSON.stringify({ company, role, jobUrl: url || undefined, status, jobDescription }),
       });
-      setJobs(prev => [newJob, ...prev]);
+      setJobs((prev) => [newJob, ...prev]);
+      setNotice(`Tracking ${role} at ${company}${jobDescription ? ". Matching it against your resume now." : "."}`);
       setShowAddForm(false);
-      setNewCompany("");
-      setNewRole("");
-      setNewUrl("");
-      setNewJobDescription("");
+      setNewCompany(""); setNewRole(""); setNewUrl(""); setNewJobDescription(""); setNewStatus("Wishlist");
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Failed to track job application."); }
+      if (err instanceof Error) setError(err.message || "Failed to track the job.");
+    } finally {
+      setTrackingUrl(null);
+    }
+  };
+
+  const handleAnalyze = async (id: string) => {
+    try {
+      const job: Job = await fetchWithAuth(`/jobs/${id}/analyze`, { method: "POST" });
+      setJobs((prev) => prev.map((j) => (j._id === id ? job : j)));
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message || "Couldn't start the match.");
     }
   };
 
   const handleDeleteJob = async (id: string) => {
+    if (!confirm("Delete this application from your tracker? This can’t be undone.")) return;
     setError("");
-    // Optimistic UI update
-    setJobs(prev => prev.filter(j => j._id !== id));
+    setOpenJobId(null);
+    const previous = jobs;
+    setJobs((prev) => prev.filter((j) => j._id !== id));
     try {
       await fetchWithAuth(`/jobs/${id}`, { method: "DELETE" });
     } catch (err: unknown) {
-      if (err instanceof Error) { setError(err.message || "Failed to delete job."); }
-      loadJobs();
+      setJobs(previous);
+      if (err instanceof Error) setError(err.message || "Failed to delete the job.");
     }
   };
-
-  const handleRefreshJob = async (id: string) => {
-    // Allows user to manually poll for the latest job status
-    try {
-      const data = await fetchWithAuth("/jobs");
-      setJobs(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const columns: Job["status"][] = ["Wishlist", "Applied", "Interviewing", "Offer", "Rejected"];
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6">
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
-          <AlertCircle size={18} className="shrink-0" />
-          <span>{error}</span>
+        <div role="alert" className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
+          <AlertCircle size={18} className="shrink-0" aria-hidden />
+          <span className="flex-1">{error}</span>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error" className="p-1 rounded-lg hover:bg-danger/10"><X size={14} aria-hidden /></button>
+        </div>
+      )}
+      {notice && (
+        <div role="status" className="flex items-center gap-3 p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm">
+          <CheckCircle size={18} className="shrink-0" aria-hidden />
+          <span className="flex-1">{notice}</span>
+          <button type="button" onClick={() => setNotice("")} aria-label="Dismiss message" className="p-1 rounded-lg hover:bg-success/10"><X size={14} aria-hidden /></button>
         </div>
       )}
 
-      {/* JOB BOARD VACANCIES SECTION */}
-      <div className="grid grid-cols-1 gap-8">
+      <PipelineSummary jobs={jobs} />
 
-        {/* Live Search Panel */}
-        <SearchPanel
-          searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
-          locationTerm={locationTerm}
-          onLocationTermChange={setLocationTerm}
-          searching={searching}
-          onSearch={handleSearch}
-          onShowAddForm={() => setShowAddForm(true)}
-        />
+      <KanbanBoard jobs={jobs} onStatusChange={(id, status) => updateJob(id, { status })} onOpen={(job) => setOpenJobId(job._id)} />
 
-        {/* Results Panel */}
-        <SearchResultsPanel
-          searchResults={searchResults}
-          onTrackJob={(company, role, url, jobDescription) => handleAddJob(company, role, url, "Wishlist", jobDescription)}
-        />
-
-      </div>
-
-      {/* DRAG-AND-DROP KANBAN APPLICATION BOARD */}
-      <KanbanBoard
-        jobs={jobs}
-        columns={columns}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onDelete={handleDeleteJob}
-        onRefresh={handleRefreshJob}
-        onViewInsights={setActiveMatchJob}
+      <SearchPanel
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        locationTerm={locationTerm}
+        onLocationTermChange={setLocationTerm}
+        searching={searching}
+        onSearch={handleSearch}
+        onShowAddForm={() => setShowAddForm(true)}
       />
 
-      {/* DIALOG: MANUAL JOB FORM */}
+      {search && (
+        <SearchResultsPanel
+          search={search}
+          trackedUrls={trackedUrls}
+          trackingUrl={trackingUrl}
+          onTrackJob={(company, role, url, jobDescription) => handleAddJob(company, role, url, "Wishlist", jobDescription)}
+        />
+      )}
+
       {showAddForm && (
         <AddJobModal
           company={newCompany}
@@ -195,14 +181,16 @@ export default function JobsPage() {
         />
       )}
 
-      {/* DIALOG: AI JOB INSIGHTS */}
-      {activeMatchJob && (
-        <MatchInsightsModal
-          job={activeMatchJob}
-          onClose={() => setActiveMatchJob(null)}
+      {openJob && (
+        <JobDetailModal
+          key={openJob._id}
+          job={openJob}
+          onClose={() => setOpenJobId(null)}
+          onSave={updateJob}
+          onAnalyze={handleAnalyze}
+          onDelete={handleDeleteJob}
         />
       )}
-
     </div>
   );
 }

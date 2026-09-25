@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { Copy, Mail, Send, Check, Sparkles, Building2, User, Briefcase } from "lucide-react";
 import { CompanyResearchCard } from "@/components/dashboard/CompanyResearchCard";
 
@@ -50,7 +50,7 @@ export default function OutreachPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-6">
+    <div className="space-y-6">
 
         {/* Header */}
         <div className="glass-panel p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -72,26 +72,26 @@ export default function OutreachPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Recipient Name (Optional)</label>
+                  <label htmlFor="outreach-recipient-name" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Recipient Name (Optional)</label>
                   <div className="relative">
                     <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                    <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="e.g. Sarah Connor" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+                    <input id="outreach-recipient-name" type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="e.g. Sarah Connor" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Company Name *</label>
+                  <label htmlFor="outreach-company-name" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Company Name *</label>
                   <div className="relative">
                     <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                    <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Google" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+                    <input id="outreach-company-name" required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Google" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Target Role *</label>
+                <label htmlFor="outreach-target-role" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Target Role *</label>
                 <div className="relative">
                   <Briefcase size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                  <input required type="text" value={targetRole} onChange={e => setTargetRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+                  <input id="outreach-target-role" required type="text" value={targetRole} onChange={e => setTargetRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" className="w-full bg-surface-alt border border-line rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
                 </div>
               </div>
 
@@ -120,8 +120,8 @@ export default function OutreachPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Additional Context (Optional)</label>
-                <textarea rows={3} value={context} onChange={e => setContext(e.target.value)} placeholder="e.g. I saw their post about launching a new product..." className="w-full bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-accent resize-none" />
+                <label htmlFor="outreach-additional-context" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Additional Context (Optional)</label>
+                <textarea id="outreach-additional-context" rows={3} value={context} onChange={e => setContext(e.target.value)} placeholder="e.g. I saw their post about launching a new product..." className="w-full bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-accent resize-none" />
               </div>
 
               {error && <p className="text-xs text-danger font-bold bg-danger/10 p-3 rounded-xl border border-danger/30">{error}</p>}
@@ -136,7 +136,7 @@ export default function OutreachPage() {
           {/* Result */}
           <div className="glass-panel flex flex-col overflow-hidden relative min-h-[400px]">
             <div className="p-4 border-b border-line bg-surface-alt flex items-center justify-between shrink-0">
-              <h3 className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-2">
+              <h3 className="section-heading">
                 <Mail size={14} className="text-accent" /> Drafted Message
               </h3>
               {result && (
@@ -152,11 +152,12 @@ export default function OutreachPage() {
                   {result}
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 opacity-50">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8">
                   <div className="w-16 h-16 rounded-full bg-surface-alt flex items-center justify-center mb-4 border border-line">
-                    <Sparkles size={24} className="text-muted" />
+                    <Sparkles size={24} className="text-muted" aria-hidden />
                   </div>
-                  <p className="text-sm font-semibold text-muted max-w-[200px]">Fill out the details on the left and click Generate to see the magic!</p>
+                  <p className="text-sm font-semibold text-foreground">Your draft will appear here</p>
+                  <p className="text-sm text-muted max-w-[240px] mt-1">Fill in the company and role, then select Generate Message.</p>
                 </div>
               )}
             </div>

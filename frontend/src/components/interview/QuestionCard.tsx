@@ -83,7 +83,7 @@ export default function QuestionCard({
                       : "bg-surface-alt border-line text-foreground hover:bg-surface"
                   }`}
                 >
-                  <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-extrabold ${
+                  <span className={`w-5 h-5 rounded flex items-center justify-center text-[11px] font-extrabold ${
                     isSelected ? "bg-accent text-accent-contrast" : "bg-surface text-muted"
                   }`}>
                     {letter}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, AlertCircle } from "lucide-react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { InterviewSession } from "@/types/interview";
 import SetupForm from "@/components/interview/SetupForm";
 import JournalList from "@/components/interview/JournalList";
@@ -105,6 +105,7 @@ export default function InterviewPage() {
 
   const handleDeleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!confirm("Delete this interview session and its feedback? This can’t be undone.")) return;
     setError("");
     // Optimistic UI update
     setSessions(prev => prev.filter(s => s._id !== id));
@@ -122,7 +123,7 @@ export default function InterviewPage() {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6">
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
           <AlertCircle size={18} className="shrink-0" />
@@ -132,7 +133,7 @@ export default function InterviewPage() {
 
       {!activeSession ? (
         /* SETUP PORTAL AND HISTORY */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <SetupForm
             type={type}
@@ -156,7 +157,7 @@ export default function InterviewPage() {
         </div>
       ) : (
         /* LIVE ONGOING SESSION PANEL / FEEDBACK RESULTS SCREEN */
-        <div className="max-w-2xl mx-auto space-y-8">
+        <div className="max-w-2xl mx-auto space-y-6">
 
           {/* Back button */}
           <button

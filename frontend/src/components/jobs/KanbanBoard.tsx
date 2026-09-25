@@ -1,77 +1,67 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { Job } from "@/types/jobs";
-import { getStatusColor } from "./jobUtils";
+import { Job, JobStatus } from "@/types/jobs";
+import { STATUSES, getStatusColor } from "./jobUtils";
 import JobCard from "./JobCard";
 
 interface KanbanBoardProps {
   jobs: Job[];
-  columns: Job["status"][];
-  onDragStart: (e: React.DragEvent, jobId: string) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, targetStatus: Job["status"]) => void;
-  onDelete: (id: string) => void;
-  onRefresh: (id: string) => void;
-  onViewInsights: (job: Job) => void;
+  onStatusChange: (id: string, status: JobStatus) => void;
+  onOpen: (job: Job) => void;
 }
 
-export default function KanbanBoard({
-  jobs,
-  columns,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDelete,
-  onRefresh,
-  onViewInsights,
-}: KanbanBoardProps) {
+export default function KanbanBoard({ jobs, onStatusChange, onOpen }: KanbanBoardProps) {
+  const [dropTarget, setDropTarget] = useState<JobStatus | null>(null);
+
+  const handleDrop = (e: React.DragEvent, status: JobStatus) => {
+    e.preventDefault();
+    setDropTarget(null);
+    const id = e.dataTransfer.getData("jobId");
+    const job = jobs.find((j) => j._id === id);
+    if (job && job.status !== status) onStatusChange(id, status);
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
-          <TrendingUp size={16} className="text-accent" />
-          <span>Applications Kanban Board</span>
-        </h3>
-        <p className="text-xs text-muted">Drag & drop cards to progress status</p>
+    <section aria-labelledby="kanban-title" className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <h2 id="kanban-title" className="section-heading">
+          <TrendingUp size={14} className="text-accent" aria-hidden /> Applications
+        </h2>
+        <p className="text-xs text-muted hidden sm:block">Drag cards between columns, or change a card&apos;s status</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto">
-        {columns.map(status => {
-          const columnJobs = jobs.filter(j => j.status === status);
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {STATUSES.map((status) => {
+          const columnJobs = jobs.filter((j) => j.status === status);
           return (
             <div
               key={status}
-              onDragOver={onDragOver}
-              onDrop={(e) => onDrop(e, status)}
-              className="glass-panel p-4 flex flex-col min-h-[400px] bg-surface-alt rounded-2xl"
+              onDragOver={(e) => { e.preventDefault(); setDropTarget(status); }}
+              onDragLeave={() => setDropTarget((t) => (t === status ? null : t))}
+              onDrop={(e) => handleDrop(e, status)}
+              className={`glass-panel p-3 flex flex-col lg:min-h-[200px] transition-colors ${dropTarget === status ? "outline-2 outline-dashed outline-accent" : ""}`}
             >
-              <div className={`px-2.5 py-1.5 rounded-lg border font-bold text-xs text-center uppercase tracking-wider mb-4 ${getStatusColor(status)}`}>
-                {status} ({columnJobs.length})
-              </div>
+              <h3 className={`px-2.5 py-1.5 rounded-lg border font-bold text-xs text-center uppercase tracking-wider mb-3 ${getStatusColor(status)}`}>
+                {status} <span className="font-semibold">({columnJobs.length})</span>
+              </h3>
 
-              <div className="flex-1 space-y-3">
-                {columnJobs.map(job => (
-                  <JobCard
-                    key={job._id}
-                    job={job}
-                    onDragStart={onDragStart}
-                    onDelete={onDelete}
-                    onRefresh={onRefresh}
-                    onViewInsights={onViewInsights}
-                  />
-                ))}
-                {columnJobs.length === 0 && (
-                  <div className="h-full flex items-center justify-center text-[10px] text-muted py-20 border border-dashed border-line rounded-xl">
-                    Empty
-                  </div>
-                )}
-              </div>
+              {columnJobs.length > 0 ? (
+                <ul className="flex-1 space-y-2.5">
+                  {columnJobs.map((job) => (
+                    <JobCard key={job._id} job={job} onDragStart={(e, id) => e.dataTransfer.setData("jobId", id)} onStatusChange={onStatusChange} onOpen={onOpen} />
+                  ))}
+                </ul>
+              ) : (
+                <p className="flex-1 flex items-center justify-center text-center text-[11px] text-muted border border-dashed border-line rounded-xl px-3 py-4 lg:py-8">
+                  {status === "Wishlist" ? "Track a job from search, or add one" : "Nothing here yet"}
+                </p>
+              )}
             </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

@@ -12,8 +12,9 @@ export function CertificationsTab({ certifications, onChangeField }: Certificati
     <div className="space-y-6 animate-fade-in-up">
       {certifications && certifications.map((cert, index) => (
         <div key={index} className="p-4 bg-surface-alt border border-line rounded-xl relative group">
-          <button onClick={() => onChangeField("certifications", certifications!.filter((_, i) => i !== index))} className="absolute top-2 right-2 text-danger opacity-0 group-hover:opacity-100 transition-opacity">
-            <X size={14} />
+          <button onClick={() => onChangeField("certifications", certifications!.filter((_, i) => i !== index))} type="button" aria-label={`Remove certification ${index + 1}`} title="Remove"
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg text-danger hover:bg-danger/10 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity">
+            <X size={14} aria-hidden />
           </button>
           <div className="space-y-3">
             <input type="text" placeholder="Certification Name" value={cert.name || ""} onChange={e => { const newCerts = [...certifications!]; newCerts[index].name = e.target.value; onChangeField("certifications", newCerts); }} className="w-full bg-transparent border-b border-line px-1 py-1 text-sm text-foreground focus:outline-none focus:border-accent font-bold" />

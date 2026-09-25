@@ -33,7 +33,7 @@ export function ResumeBuilderCard({ allExtractedSkills }: ResumeBuilderCardProps
         {/* Skills count */}
         {allExtractedSkills.length > 0 && (
           <div className="mt-4 p-3 bg-surface-alt border border-line rounded-xl">
-            <p className="text-[10px] text-muted mb-1.5 uppercase tracking-wider font-semibold">Includes {allExtractedSkills.length} skills</p>
+            <p className="text-[11px] text-muted mb-1.5 uppercase tracking-wider font-semibold">Includes {allExtractedSkills.length} skills</p>
             <div className="flex flex-wrap gap-1">
               {allExtractedSkills.slice(0, 6).map(s => (
                 <span key={s} className="skill-tag">{s}</span>
