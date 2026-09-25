@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const Profile = require("../models/Profile");
+const JobApplication = require("../models/JobApplication");
 
 const router = express.Router();
 
@@ -125,19 +126,19 @@ router.post("/demo", async (req, res) => {
               title: "CareerOS AI",
               description: "This app — an AI career-readiness platform with resume parsing, ATS scoring, mock interviews, and a job tracker.",
               techStack: ["Next.js", "Express", "MongoDB", "Groq"],
-              repoUrl: "github.com/octocat/careeros-ai",
+              repoUrl: "https://github.com/octocat/careeros-ai",
             },
             {
               title: "Pantry — Recipe Sharing API",
               description: "A REST API for a recipe-sharing app with search, ratings, and image uploads. Deployed with CI/CD on push to main.",
               techStack: ["Node.js", "PostgreSQL", "Docker"],
-              repoUrl: "github.com/octocat/pantry-api",
+              repoUrl: "https://github.com/octocat/pantry-api",
             },
             {
               title: "Latency Tracker",
               description: "A small CLI that pings a list of endpoints on a schedule and alerts on latency regressions.",
               techStack: ["Go", "SQLite"],
-              repoUrl: "github.com/octocat/latency-tracker",
+              repoUrl: "https://github.com/octocat/latency-tracker",
             },
           ],
           careerScore: {
@@ -153,14 +154,46 @@ router.post("/demo", async (req, res) => {
             ],
             computedAt: now,
           },
+          // Same shape the analyzer produces (services/githubScoring.js)
           githubAnalysis: {
-            score: 71,
-            summary: "Active contributor with a healthy mix of backend and tooling projects; commit history shows consistent, incremental work rather than one-off dumps.",
-            topLanguages: ["JavaScript", "TypeScript", "Go"],
+            score: 69,
+            summary: "Six original repositories spanning a TypeScript web platform, a JavaScript REST API and Go tooling. Activity is the strongest signal, with 4 repos pushed in the last 90 days. Adding live demo links and topics would do the most to strengthen the showcase.",
+            topLanguages: ["TypeScript", "JavaScript", "Go"],
+            signals: [
+              { key: "documentation", label: "Documentation", score: 24, max: 30, detail: "5/6 recent repos have a README · 4/6 have a description" },
+              { key: "activity", label: "Activity", score: 20, max: 25, detail: "4 repos pushed in the last 90 days · last push 12 days ago" },
+              { key: "showcase", label: "Showcase", score: 11, max: 20, detail: "1 live demo link · 3/6 with topics · 4/6 licensed" },
+              { key: "community", label: "Community", score: 8, max: 15, detail: "22 stars · 9 followers" },
+              { key: "breadth", label: "Breadth", score: 6, max: 10, detail: "3 languages across 6 repos" },
+            ],
+            recommendations: [
+              "Add live demo links to 2 more projects (About → Website).",
+              "Add a README to dotfiles: what it does, how to run it, and a screenshot.",
+              "Add a one-line description to dotfiles and scratchpad.",
+              "Add topics (e.g. react, fastapi) to latency-tracker, dotfiles and scratchpad so they show up in skill searches.",
+            ],
+            metrics: {
+              repoCount: 6, totalStars: 22, followers: 9, recentlyPushed: 4, daysSinceLastPush: 12,
+              readmeChecked: 6, readmeCount: 5, descriptionCount: 4, demoCount: 1, topicsCount: 3, licenseCount: 4,
+              hasProfileReadme: true,
+              languages: [{ name: "TypeScript", share: 50 }, { name: "JavaScript", share: 33 }, { name: "Go", share: 17 }],
+            },
             repos: [
-              { name: "careeros-ai", description: "AI career-readiness platform", language: "TypeScript", stars: 12, html_url: "https://github.com/octocat" },
-              { name: "pantry-api", description: "Recipe sharing REST API", language: "JavaScript", stars: 4, html_url: "https://github.com/octocat" },
-              { name: "latency-tracker", description: "Endpoint latency alerting CLI", language: "Go", stars: 2, html_url: "https://github.com/octocat" },
+              { name: "careeros-ai", description: "AI career-readiness platform", language: "TypeScript", stars: 12, html_url: "https://github.com/octocat/careeros-ai", hasReadme: true },
+              { name: "pantry-api", description: "Recipe sharing REST API", language: "JavaScript", stars: 4, html_url: "https://github.com/octocat/pantry-api", hasReadme: true },
+              { name: "latency-tracker", description: "Endpoint latency alerting CLI", language: "Go", stars: 2, html_url: "https://github.com/octocat/latency-tracker", hasReadme: true },
+              { name: "design-tokens", description: "Shared color and type tokens for web apps", language: "TypeScript", stars: 3, html_url: "https://github.com/octocat/design-tokens", hasReadme: true },
+              { name: "scratchpad", description: "", language: "TypeScript", stars: 1, html_url: "https://github.com/octocat/scratchpad", hasReadme: true },
+              { name: "dotfiles", description: "", language: "JavaScript", stars: 0, html_url: "https://github.com/octocat/dotfiles", hasReadme: false },
+            ],
+            computedAt: now,
+          },
+          careerPath: {
+            targetRole: "Backend/Cloud Software Engineer",
+            ladder: [
+              { title: "Software Engineer", yearsRange: "0–2 years", description: "Ship well-scoped features and own services end to end with review." },
+              { title: "Senior Software Engineer", yearsRange: "3–5 years", description: "Design services, lead projects across a team, mentor juniors." },
+              { title: "Staff Engineer", yearsRange: "6–9 years", description: "Set technical direction across teams and own platform-level decisions." },
             ],
             computedAt: now,
           },
@@ -179,8 +212,39 @@ router.post("/demo", async (req, res) => {
             computedAt: now,
           },
         });
+
+        // A few applications across the board, so the Job Tracker isn't empty
+        const daysAgo = (d) => new Date(now.getTime() - d * 86_400_000);
+        await JobApplication.insertMany([
+          {
+            user: user._id, company: "Northwind Payments", role: "Backend Engineer", status: "Interviewing",
+            jobUrl: "https://example.com/careers/northwind-backend", appliedOn: daysAgo(18),
+            notes: "Recruiter screen went well. System design round on Friday.",
+            jobDescription: "Backend Engineer to build payment APIs in Node.js and TypeScript on AWS, with PostgreSQL, Docker and Kubernetes. Nice to have: Kafka, GraphQL.",
+            matchStatus: "completed", matchPercentage: 73, keywordSource: "ai", matchedAt: daysAgo(18),
+            matchedSkills: ["Node.js", "TypeScript", "AWS", "PostgreSQL", "Docker", "GraphQL"], missingSkills: ["Kubernetes", "Kafka"],
+            tips: ["Required skills your resume doesn't mention: Kubernetes. If you've used any, name them in your resume before applying.", "Nice-to-haves you could highlight if they apply: Kafka."],
+          },
+          {
+            user: user._id, company: "Helios Cloud", role: "Platform Engineer", status: "Applied",
+            jobUrl: "https://example.com/careers/helios-platform", appliedOn: daysAgo(6),
+            jobDescription: "Platform Engineer working on Terraform, Kubernetes and AWS infrastructure, CI/CD with GitHub Actions, and Go tooling. Nice to have: Prometheus, Grafana.",
+            matchStatus: "completed", matchPercentage: 45, keywordSource: "ai", matchedAt: daysAgo(6),
+            matchedSkills: ["AWS", "Go", "Docker"], missingSkills: ["Terraform", "Kubernetes", "GitHub Actions", "Prometheus", "Grafana"],
+            tips: ["Required skills your resume doesn't mention: Terraform, Kubernetes, GitHub Actions. If you've used any, name them in your resume before applying.", "Nice-to-haves you could highlight if they apply: Prometheus, Grafana."],
+          },
+          {
+            user: user._id, company: "Lattice Labs", role: "Software Engineer II", status: "Wishlist",
+            jobUrl: "https://example.com/careers/lattice-swe2",
+          },
+          {
+            user: user._id, company: "Quill Analytics", role: "Full Stack Developer", status: "Rejected",
+            jobUrl: "https://example.com/careers/quill-fullstack", appliedOn: daysAgo(30),
+            notes: "Rejected after take-home. Feedback: add more tests.",
+          },
+        ]);
       } catch (profileErr) {
-        await User.findByIdAndDelete(user._id);
+        await Promise.all([User.findByIdAndDelete(user._id), JobApplication.deleteMany({ user: user._id })]);
         throw profileErr;
       }
     }

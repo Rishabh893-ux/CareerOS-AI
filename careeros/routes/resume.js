@@ -220,7 +220,12 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
       source = "upload";
     } else {
       if (!profile) return res.status(404).json({ error: "Upload a resume first, or attach one to this check." });
-      resumeText = profile.resumeRawText || profileAsText(profile);
+      if (profile.resumeRawText) {
+        resumeText = profile.resumeRawText;
+      } else {
+        const User = require("../models/User");
+        resumeText = profileAsText(profile, await User.findById(req.userId).select("name email linkedinUrl githubUsername"));
+      }
       source = profile.resumeRawText ? "profile-resume" : "profile-fields";
       if (resumeText.length < 30) return res.status(422).json({ error: "Your profile is too empty to check. Upload a resume first." });
     }

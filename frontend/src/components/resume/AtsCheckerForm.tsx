@@ -83,7 +83,7 @@ export function AtsCheckerForm({
               <p className="text-[11px] text-muted">
                 {profile?.resumeLastParsedAt
                   ? "Drop a specific PDF/Img here, or leave blank to use your profile resume"
-                  : "Drop a PDF/Img here to check against the JD"}
+                  : "Drop a PDF/Img here, or leave blank to check your profile details"}
               </p>
             )}
             <input ref={atsFileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} onChange={(e) => e.target.files?.[0] && onAtsFileSelect(e.target.files[0])} className="hidden" />
@@ -109,7 +109,7 @@ export function AtsCheckerForm({
 
         <button
           type="submit"
-          disabled={checkingAts || (!profile?.resumeLastParsedAt && !atsSelectedFile)}
+          disabled={checkingAts || (!profile && !atsSelectedFile)}
           className="w-full py-3 btn-primary text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {checkingAts ? (
