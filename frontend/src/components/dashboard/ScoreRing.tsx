@@ -40,7 +40,7 @@ export function ScoreRing({ score, size = 140, strokeWidth = 9 }: { score: numbe
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
         <span className="text-4xl font-extrabold text-foreground leading-none">{safeScore}</span>
-        <span className="text-[10px] text-muted font-semibold uppercase tracking-widest mt-0.5">Score</span>
+        <span className="text-[11px] text-muted font-semibold uppercase tracking-widest mt-0.5">Score</span>
       </div>
     </div>
   );

@@ -1,10 +1,9 @@
 import { ImageResponse } from "next/og";
+import { API_BASE } from "@/lib/api";
 
 export const alt = "CareerOS AI Portfolio";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 interface ImageProps {
   params: Promise<{ username: string }>;
@@ -14,16 +13,17 @@ export default async function Image({ params }: ImageProps) {
   const { username } = await params;
 
   let name = "CareerOS AI";
-  let careerGoal = "AI-Powered Career Intelligence Suite";
-  let score: number | null = null;
+  let careerGoal = "Professional Portfolio";
+  // Skills, not the private readiness score: the preview is what a recruiter sees first.
+  let skills: string[] = [];
 
   try {
-    const res = await fetch(`${API_BASE}/profile/public/${username}`);
+    const res = await fetch(`${API_BASE}/profile/public/${encodeURIComponent(username)}`);
     if (res.ok) {
       const data = await res.json();
       name = data.user.name;
-      careerGoal = data.profile.careerGoal || careerGoal;
-      score = data.profile.careerScore?.score ?? null;
+      careerGoal = data.profile.careerGoal?.trim() || careerGoal;
+      skills = (data.profile.skills || []).slice(0, 5);
     }
   } catch {
     // fall through to defaults
@@ -39,8 +39,8 @@ export default async function Image({ params }: ImageProps) {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
-          background: "linear-gradient(135deg, #0b1120 0%, #0e1526 100%)",
-          color: "#eaf0fa",
+          background: "linear-gradient(135deg, #0a0c10 0%, #13161c 100%)",
+          color: "#e6e9ef",
           fontFamily: "sans-serif",
         }}
       >
@@ -50,43 +50,43 @@ export default async function Image({ params }: ImageProps) {
               width: 56,
               height: 56,
               borderRadius: 16,
-              background: "#2dd4bf",
+              background: "#3ec6b5",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: 28,
               fontWeight: 700,
-              color: "#0b1120",
+              color: "#04211e",
             }}
           >
             C
           </div>
-          <div style={{ display: "flex", fontSize: 22, fontWeight: 700, letterSpacing: 2, color: "#8b95a8" }}>
+          <div style={{ display: "flex", fontSize: 22, fontWeight: 700, letterSpacing: 2, color: "#98a1b1" }}>
             CAREEROS AI
           </div>
         </div>
 
         <div style={{ display: "flex", fontSize: 64, fontWeight: 800, marginBottom: 20 }}>{name}</div>
-        <div style={{ display: "flex", fontSize: 28, color: "#8b95a8", maxWidth: 920 }}>{careerGoal}</div>
+        <div style={{ display: "flex", fontSize: 28, color: "#98a1b1", maxWidth: 920 }}>{careerGoal}</div>
 
-        {score !== null && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 48 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 88,
-                height: 88,
-                borderRadius: 999,
-                border: "6px solid #2dd4bf",
-                fontSize: 32,
-                fontWeight: 800,
-              }}
-            >
-              {score}
-            </div>
-            <div style={{ display: "flex", fontSize: 20, color: "#8b95a8" }}>Career Readiness Score</div>
+        {skills.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 48 }}>
+            {skills.map((skill) => (
+              <div
+                key={skill}
+                style={{
+                  display: "flex",
+                  padding: "10px 20px",
+                  borderRadius: 12,
+                  border: "2px solid #3ec6b5",
+                  color: "#3ec6b5",
+                  fontSize: 24,
+                  fontWeight: 600,
+                }}
+              >
+                {skill}
+              </div>
+            ))}
           </div>
         )}
       </div>

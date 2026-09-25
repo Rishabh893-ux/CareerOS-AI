@@ -1,6 +1,9 @@
 import { Sparkles, Target, Zap, GitBranch, GraduationCap, Code, Trash2, Plus } from "lucide-react";
 import type { Profile } from "@/types/dashboard";
 
+const FIELD_LABEL = "block text-xs font-semibold text-muted mb-1.5";
+const FIELD = "w-full bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted";
+
 interface ProfileEditFormProps {
   profile: Profile | null;
   loading: boolean;
@@ -68,19 +71,23 @@ export function ProfileEditForm({
   onRemoveProject,
   onCancel,
 }: ProfileEditFormProps) {
+  const canAddProject = newProjTitle.trim() !== "" && newProjDesc.trim() !== "";
+  const projectDraftStarted = !!(newProjTitle || newProjDesc || newProjStack || newProjRepo);
+  const otherEducationCount = Math.max((profile?.education?.length || 0) - 1, 0);
+
   return (
-    <div className="premium-card p-8 max-w-2xl mx-auto">
+    <div className="premium-card p-6 sm:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-accent brand-mark flex items-center justify-center shadow-lg">
-          <Sparkles size={18} className="text-accent-contrast" />
+          <Sparkles size={18} className="text-accent-contrast" aria-hidden />
         </div>
         <div>
           <h2 className="text-lg font-bold text-foreground">
-            {profile ? "Edit Developer Profile" : "Setup Developer Profile"}
+            {profile ? "Edit Profile" : "Set Up Your Profile"}
           </h2>
           <p className="text-xs text-muted">
-            {profile ? "Update your details below" : "Tell us about yourself to get started"}
+            {profile ? "Your career score, roadmap and portfolio use these details." : "Tell us about yourself to get started."}
           </p>
         </div>
       </div>
@@ -88,11 +95,11 @@ export function ProfileEditForm({
       <form onSubmit={onSubmit} className="space-y-6">
         {/* Career Goal */}
         <div className="space-y-2">
-          <label className="section-heading">
-            <Target size={12} />
+          <label htmlFor="profile-edit-form-career-goal" className="section-heading">
+            <Target size={12} aria-hidden />
             Career Goal
           </label>
-          <input
+          <input id="profile-edit-form-career-goal"
             type="text"
             placeholder="e.g. Full Stack Developer, AI Engineer, SDE-1"
             value={careerGoal}
@@ -104,42 +111,37 @@ export function ProfileEditForm({
 
         {/* Skills */}
         <div className="space-y-2">
-          <label className="section-heading">
-            <Zap size={12} />
-            Skills (comma-separated)
+          <label htmlFor="profile-edit-form-skills" className="section-heading">
+            <Zap size={12} aria-hidden />
+            Skills
           </label>
-          <textarea
+          <textarea id="profile-edit-form-skills"
             placeholder="React, Node.js, Python, MongoDB, Docker, TypeScript..."
             value={skillsText}
             onChange={(e) => setSkillsText(e.target.value)}
+            aria-describedby="profile-edit-form-skills-hint"
             className="w-full h-24 bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted resize-none"
-            required
           />
+          <p id="profile-edit-form-skills-hint" className="text-xs text-muted">
+            Separate with commas. This includes skills pulled from your resume, so remove any that don&apos;t fit.
+          </p>
         </div>
 
-        {/* GitHub & Year */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="section-heading"><GitBranch size={12} /> GitHub Username</label>
-            <div className="flex items-center gap-2 bg-surface-alt border border-line rounded-xl px-4 py-3">
-              <GitBranch size={14} className="text-muted shrink-0" />
-              <input
-                type="text"
-                placeholder="your_github"
-                value={githubUsername}
-                onChange={(e) => setGithubUsername(e.target.value)}
-                className="bg-transparent text-sm w-full text-foreground placeholder:text-muted"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="section-heading">Graduation Year</label>
-            <input
-              type="number"
-              placeholder="2026"
-              value={eduYear}
-              onChange={(e) => setEduYear(e.target.value)}
-              className="w-full bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted"
+        {/* GitHub */}
+        <div className="space-y-2">
+          <label htmlFor="profile-edit-form-github-username" className="section-heading">
+            <GitBranch size={12} aria-hidden /> GitHub Username
+          </label>
+          <div className="flex items-center gap-1 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent">
+            <span className="text-muted text-sm select-none" aria-hidden>github.com/</span>
+            <input id="profile-edit-form-github-username"
+              type="text"
+              placeholder="username"
+              autoComplete="off"
+              spellCheck={false}
+              value={githubUsername}
+              onChange={(e) => setGithubUsername(e.target.value)}
+              className="bg-transparent text-sm w-full text-foreground placeholder:text-muted focus:outline-none"
             />
           </div>
         </div>
@@ -147,67 +149,106 @@ export function ProfileEditForm({
         {/* Education */}
         <div className="space-y-4 border-t border-line pt-6">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <GraduationCap size={15} className="text-accent" /> Education
+            <GraduationCap size={15} className="text-accent" aria-hidden /> Education
           </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" placeholder="Institute Name" value={eduInstitute} onChange={(e) => setEduInstitute(e.target.value)}
-              className="bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted" />
-            <input type="text" placeholder="Degree (B.Tech)" value={eduDegree} onChange={(e) => setEduDegree(e.target.value)}
-              className="bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted" />
-            <input type="text" placeholder="Branch (CSE)" value={eduBranch} onChange={(e) => setEduBranch(e.target.value)}
-              className="bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted col-span-2" />
-            <input type="number" step="0.01" placeholder="CGPA (8.5)" value={eduCgpa} onChange={(e) => setEduCgpa(e.target.value)}
-              className="bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted col-span-2" />
+          {otherEducationCount > 0 && (
+            <p className="text-xs text-muted">
+              Editing your first entry. Your other {otherEducationCount === 1 ? "entry stays" : `${otherEducationCount} entries stay`} as {otherEducationCount === 1 ? "it is" : "they are"}.
+            </p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label htmlFor="edu-institute" className={FIELD_LABEL}>Institute</label>
+              <input id="edu-institute" type="text" placeholder="e.g. IIT Delhi" value={eduInstitute}
+                onChange={(e) => setEduInstitute(e.target.value)} className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="edu-degree" className={FIELD_LABEL}>Degree</label>
+              <input id="edu-degree" type="text" placeholder="e.g. B.Tech" value={eduDegree}
+                onChange={(e) => setEduDegree(e.target.value)} className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="edu-branch" className={FIELD_LABEL}>Field of study</label>
+              <input id="edu-branch" type="text" placeholder="e.g. Computer Science" value={eduBranch}
+                onChange={(e) => setEduBranch(e.target.value)} className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="edu-cgpa" className={FIELD_LABEL}>CGPA <span className="font-normal">(optional)</span></label>
+              <input id="edu-cgpa" type="number" inputMode="decimal" step="0.01" min="0" max="10" placeholder="e.g. 8.5"
+                value={eduCgpa} onChange={(e) => setEduCgpa(e.target.value)} className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="edu-year" className={FIELD_LABEL}>Graduation year</label>
+              <input id="edu-year" type="number" inputMode="numeric" min="1950" max="2100" placeholder="e.g. 2026"
+                value={eduYear} onChange={(e) => setEduYear(e.target.value)} className={FIELD} />
+            </div>
           </div>
         </div>
 
         {/* Projects */}
         <div className="space-y-4 border-t border-line pt-6">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Code size={15} className="text-accent" /> Projects
+            <Code size={15} className="text-accent" aria-hidden /> Projects
           </h3>
           {projectsList.length > 0 && (
-            <div className="space-y-2">
+            <ul className="space-y-2">
               {projectsList.map((proj, idx) => (
-                <div key={idx} className="flex justify-between items-center p-3 bg-surface-alt border border-line rounded-xl">
-                  <div>
-                    <p className="font-semibold text-sm text-foreground">{proj.title}</p>
+                <li key={idx} className="flex justify-between items-center gap-3 p-3 bg-surface-alt border border-line rounded-xl">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">{proj.title}</p>
                     <p className="text-xs text-muted line-clamp-1 mt-0.5">{proj.description}</p>
                   </div>
                   <button type="button" onClick={() => onRemoveProject(idx)}
-                    className="text-danger/60 hover:text-danger p-1.5 hover:bg-danger/10 rounded-lg transition-all">
-                    <Trash2 size={14} />
+                    aria-label={`Remove project ${proj.title}`} title="Remove"
+                    className="text-danger p-2 hover:bg-danger/10 rounded-lg transition-all shrink-0">
+                    <Trash2 size={14} aria-hidden />
                   </button>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
           <div className="p-4 bg-surface-alt border border-dashed border-line rounded-xl space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <input type="text" placeholder="Project Title" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)}
-                className="bg-surface-alt border border-line rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted" />
-              <input type="text" placeholder="Repo URL" value={newProjRepo} onChange={(e) => setNewProjRepo(e.target.value)}
-                className="bg-surface-alt border border-line rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted" />
-              <input type="text" placeholder="Tech stack (React, Node...)" value={newProjStack} onChange={(e) => setNewProjStack(e.target.value)}
-                className="bg-surface-alt border border-line rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted col-span-2" />
-              <textarea placeholder="Brief description..." value={newProjDesc} onChange={(e) => setNewProjDesc(e.target.value)}
-                className="bg-surface-alt border border-line rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted col-span-2 resize-none h-16" />
+            <p className="text-xs font-semibold text-foreground">Add a project</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="proj-title" className={FIELD_LABEL}>Title</label>
+                <input id="proj-title" type="text" placeholder="e.g. Expense Tracker" value={newProjTitle}
+                  onChange={(e) => setNewProjTitle(e.target.value)} className={FIELD} />
+              </div>
+              <div>
+                <label htmlFor="proj-repo" className={FIELD_LABEL}>Repo link <span className="font-normal">(optional)</span></label>
+                <input id="proj-repo" type="url" inputMode="url" placeholder="https://github.com/..." value={newProjRepo}
+                  onChange={(e) => setNewProjRepo(e.target.value)} className={FIELD} />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="proj-stack" className={FIELD_LABEL}>Tech stack <span className="font-normal">(comma-separated)</span></label>
+                <input id="proj-stack" type="text" placeholder="e.g. React, Node.js, MongoDB" value={newProjStack}
+                  onChange={(e) => setNewProjStack(e.target.value)} className={FIELD} />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="proj-desc" className={FIELD_LABEL}>Description</label>
+                <textarea id="proj-desc" placeholder="What it does and what you built" value={newProjDesc}
+                  onChange={(e) => setNewProjDesc(e.target.value)} className={`${FIELD} resize-none h-20`} />
+              </div>
             </div>
-            <button type="button" onClick={onAddProject}
-              className="w-full py-2 btn-ghost text-xs font-semibold flex items-center justify-center gap-1.5">
-              <Plus size={13} /> Add Project
+            <button type="button" onClick={onAddProject} disabled={!canAddProject}
+              className="w-full py-2.5 btn-ghost text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+              <Plus size={14} aria-hidden /> Add Project
             </button>
+            {!canAddProject && projectDraftStarted && (
+              <p className="text-xs text-muted">Add a title and description to include this project.</p>
+            )}
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3 border-t border-line pt-6">
-          <button type="submit"
-            className="flex-1 py-3 btn-primary text-sm font-semibold">
-            {loading ? "Saving..." : "Save Profile"}
+          <button type="submit" disabled={loading}
+            className="flex-1 py-3 btn-primary text-sm font-semibold disabled:opacity-70 disabled:cursor-wait">
+            {loading ? "Saving…" : "Save Profile"}
           </button>
           {profile && (
-            <button type="button" onClick={onCancel}
+            <button type="button" onClick={onCancel} disabled={loading}
               className="px-6 py-3 btn-ghost text-sm">
               Cancel
             </button>

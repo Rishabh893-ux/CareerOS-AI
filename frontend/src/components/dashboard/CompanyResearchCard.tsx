@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { Search, Sparkles, Compass, MessageCircleQuestion, ClipboardList, Target, Building2 } from "lucide-react";
 
 interface ResearchBrief {
@@ -106,7 +106,7 @@ export function CompanyResearchCard({ companyName, targetRole }: CompanyResearch
       {error && <p className="text-xs text-danger font-bold bg-danger/10 p-3 rounded-xl border border-danger/30 mb-3">{error}</p>}
 
       {brief ? (
-        <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+        <div className="space-y-4">
           <p className="text-xs text-foreground leading-relaxed bg-surface-alt border border-line rounded-xl p-3">{brief.industryContext}</p>
 
           <div className="space-y-2">

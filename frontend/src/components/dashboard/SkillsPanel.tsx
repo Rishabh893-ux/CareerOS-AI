@@ -16,9 +16,9 @@ export function SkillsPanel({ allSkills, displaySkills, skillsExpanded, onToggle
       <div className="flex items-center justify-between mb-4">
         <span className="section-heading"><Zap size={12} className="text-accent" /> Your Skills ({allSkills.length})</span>
         {allSkills.length > 10 && (
-          <button onClick={onToggleExpanded}
+          <button type="button" onClick={onToggleExpanded} aria-expanded={skillsExpanded}
             className="text-xs text-muted hover:text-foreground flex items-center gap-1 transition-all">
-            {skillsExpanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Show all</>}
+            {skillsExpanded ? <><ChevronUp size={12} aria-hidden /> Show less</> : <><ChevronDown size={12} aria-hidden /> Show all {allSkills.length}</>}
           </button>
         )}
       </div>
@@ -27,7 +27,7 @@ export function SkillsPanel({ allSkills, displaySkills, skillsExpanded, onToggle
           <SkillPill key={skill} skill={skill} delay={i * 30} />
         ))}
         {!skillsExpanded && allSkills.length > 10 && (
-          <span className="skill-tag opacity-50">+{allSkills.length - 10} more</span>
+          <span className="skill-tag text-muted">+{allSkills.length - 10} more</span>
         )}
       </div>
     </div>
