@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { ResumeData, TemplateId } from "@/components/resume/templates";
 import { Toolbar } from "@/components/resume-builder/Toolbar";
 import { EditorSidebar } from "@/components/resume-builder/EditorSidebar";
 import { PreviewPane } from "@/components/resume-builder/PreviewPane";
 import type { EnhancingState, ResumeBuilderTab } from "@/types/resume-builder";
+import { mergeSkills } from "@/lib/skills";
 
 export default function ResumeBuilder() {
   const [data, setData] = useState<ResumeData>({
@@ -86,7 +87,7 @@ export default function ResumeBuilder() {
         github: authRes?.githubUsername || "",
         linkedin: authRes?.linkedinUrl || "",
         summary: profileRes?.careerGoal || "",
-        skills: [...new Set([...(profileRes?.skills || []), ...(profileRes?.resumeExtractedSkills || [])])] as string[],
+        skills: mergeSkills(profileRes),
         education: profileRes?.education || [],
         projects: profileRes?.projects || [],
         experience: profileRes?.experience || [], // Now populated from AI parsing!

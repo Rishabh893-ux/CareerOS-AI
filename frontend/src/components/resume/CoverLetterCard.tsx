@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
 import { Copy, Check, Sparkles, Building2, Briefcase, FileText } from "lucide-react";
 
 type Tone = "warm" | "formal" | "confident";
@@ -68,24 +68,24 @@ export function CoverLetterCard() {
         <form onSubmit={handleGenerate} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Company *</label>
+              <label htmlFor="cover-letter-card-company" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Company *</label>
               <div className="relative">
                 <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Google" className="w-full bg-surface-alt border border-line rounded-xl pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+                <input id="cover-letter-card-company" required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="e.g. Google" className="w-full bg-surface-alt border border-line rounded-xl pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Role *</label>
+              <label htmlFor="cover-letter-card-role" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Role *</label>
               <div className="relative">
                 <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input required type="text" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} placeholder="e.g. Frontend Engineer" className="w-full bg-surface-alt border border-line rounded-xl pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
+                <input id="cover-letter-card-role" required type="text" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} placeholder="e.g. Frontend Engineer" className="w-full bg-surface-alt border border-line rounded-xl pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-accent" />
               </div>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Job Description (Optional)</label>
-            <textarea rows={4} value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste the job posting for a more tailored letter..." className="w-full bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-accent resize-none" />
+            <label htmlFor="cover-letter-card-job-description" className="text-xs font-bold text-muted uppercase tracking-wider block mb-2">Job Description (Optional)</label>
+            <textarea id="cover-letter-card-job-description" rows={4} value={jobDescription} onChange={e => setJobDescription(e.target.value)} placeholder="Paste the job posting for a more tailored letter..." className="w-full bg-surface-alt border border-line rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-accent resize-none" />
           </div>
 
           <div>
@@ -118,7 +118,7 @@ export function CoverLetterCard() {
       {/* Result */}
       <div className="premium-card flex flex-col overflow-hidden relative min-h-[400px] p-0">
         <div className="p-4 border-b border-line bg-surface-alt flex items-center justify-between shrink-0">
-          <h3 className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-2">
+          <h3 className="section-heading">
             <FileText size={14} className="text-accent" /> Draft
           </h3>
           {letter && (
@@ -128,7 +128,7 @@ export function CoverLetterCard() {
             </button>
           )}
         </div>
-        <div className="flex-1 p-6 relative overflow-y-auto max-h-[500px]">
+        <div className="flex-1 p-6 relative">
           {letter ? (
             <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">{letter}</div>
           ) : (

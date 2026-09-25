@@ -19,7 +19,7 @@ export function Toolbar({ template, onTemplateChange, isCompact, onCompactChange
         </Link>
         <div>
           <h1 className="font-bold text-foreground text-sm">Resume Builder</h1>
-          <p className="text-[10px] text-muted">Live Preview Mode</p>
+          <p className="text-[11px] text-muted">Live Preview Mode</p>
         </div>
       </div>
 

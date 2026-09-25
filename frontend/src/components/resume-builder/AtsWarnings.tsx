@@ -10,7 +10,7 @@ export function AtsWarnings({ warnings }: AtsWarningsProps) {
       <h3 className="text-danger text-xs font-bold mb-2 flex items-center gap-2">
         ⚠️ ATS Warnings ({warnings.length})
       </h3>
-      <ul className="list-disc pl-4 text-[10px] text-danger/80 space-y-1">
+      <ul className="list-disc pl-4 text-[11px] text-danger/80 space-y-1">
         {warnings.map((w, i) => <li key={i}>{w}</li>)}
       </ul>
     </div>

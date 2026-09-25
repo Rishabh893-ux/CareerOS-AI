@@ -58,15 +58,15 @@ export function ResumeParserCard({
       {profile?.resumeLastParsedAt && (
         <div className="p-3 bg-success/10 border border-success/30 rounded-xl flex items-start justify-between">
           <div>
-            <p className="text-[10px] text-success font-bold uppercase tracking-wider">✅ Profile Resume Active</p>
-            <p className="text-[10px] text-muted mt-0.5">
+            <p className="text-[11px] text-success font-bold uppercase tracking-wider">✅ Profile Resume Active</p>
+            <p className="text-[11px] text-muted mt-0.5">
               Parsed: {new Date(profile.resumeLastParsedAt).toLocaleDateString()} · {profile.resumeExtractedSkills?.length || 0} skills extracted
             </p>
           </div>
           <button
             onClick={onRemoveResume}
             disabled={removing}
-            className="text-[10px] bg-danger/10 hover:bg-danger/20 text-danger px-2 py-1 rounded-md transition-colors disabled:opacity-50"
+            className="text-[11px] bg-danger/10 hover:bg-danger/20 text-danger px-2 py-1 rounded-md transition-colors disabled:opacity-50"
           >
             {removing ? "Removing..." : "Remove"}
           </button>
@@ -101,11 +101,11 @@ export function ResumeParserCard({
               </div>
             )}
             <p className="text-xs font-semibold text-foreground truncate px-2">{selectedFile.name}</p>
-            <p className="text-[10px] text-muted">{(selectedFile.size / 1024).toFixed(0)} KB</p>
+            <p className="text-[11px] text-muted">{(selectedFile.size / 1024).toFixed(0)} KB</p>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onClearFile(); }}
-              className="text-[10px] text-danger/70 hover:text-danger flex items-center gap-1 mx-auto"
+              className="text-[11px] text-danger/70 hover:text-danger flex items-center gap-1 mx-auto"
             >
               <X size={10} /> Remove
             </button>
@@ -118,7 +118,7 @@ export function ResumeParserCard({
               <ImageIcon size={18} />
             </div>
             <p className="text-xs font-semibold text-foreground">Drop your resume here</p>
-            <p className="text-[10px] text-muted">PDF · JPG · PNG · WEBP</p>
+            <p className="text-[11px] text-muted">PDF · JPG · PNG · WEBP</p>
           </div>
         )}
         <input ref={fileInputRef} type="file" accept={ACCEPTED_EXTENSIONS} onChange={(e) => e.target.files?.[0] && onFileSelect(e.target.files[0])} className="hidden" />

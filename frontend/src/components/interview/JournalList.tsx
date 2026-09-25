@@ -10,8 +10,8 @@ interface JournalListProps {
 
 export default function JournalList({ sessions, onSelectSession, onDeleteSession }: JournalListProps) {
   return (
-    <div className="premium-card p-6 lg:col-span-2 flex flex-col min-h-[380px] max-h-[440px]">
-      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
+    <div className="premium-card p-6 lg:col-span-2 flex flex-col max-h-[560px]">
+      <h3 className="section-heading mb-4">
         Interview Journal ({sessions.length})
       </h3>
 
@@ -27,16 +27,18 @@ export default function JournalList({ sessions, onSelectSession, onDeleteSession
                 <h4 className="text-xs font-bold text-foreground leading-snug">
                   {s.type} {s.format} Test {s.topic ? `on ${s.topic}` : ""}
                 </h4>
-                <p className="text-[10px] text-muted">{new Date(s.createdAt).toLocaleDateString()}</p>
+                <p className="text-[11px] text-muted">{new Date(s.createdAt).toLocaleDateString()}</p>
                 {s.feedback && (
-                  <p className="text-[10px] font-semibold text-accent line-clamp-1 mt-1">{s.feedback}</p>
+                  <p className="text-[11px] font-semibold text-accent line-clamp-1 mt-1">{s.feedback}</p>
                 )}
               </div>
               <button
+                type="button"
                 onClick={(e) => onDeleteSession(s._id, e)}
-                className="text-muted hover:text-danger p-1 rounded hover:bg-surface opacity-0 group-hover:opacity-100 transition-all"
+                aria-label="Delete session" title="Delete session"
+                className="text-muted hover:text-danger p-1.5 rounded hover:bg-surface sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-all"
               >
-                <Trash2 size={14} />
+                <Trash2 size={14} aria-hidden />
               </button>
             </div>
           ))}

@@ -28,18 +28,19 @@ export default function SetupForm({
 }: SetupFormProps) {
   return (
     <div className="premium-card p-6 lg:col-span-1 h-fit">
-      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2 mb-4">
-        <MessageSquare size={18} className="text-accent animate-float" />
+      <h3 className="section-heading flex items-center gap-2 mb-4">
+        <MessageSquare size={18} className="text-accent" aria-hidden />
         <span>Configure Mock Board</span>
       </h3>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Interview Type</label>
-          <div className="grid grid-cols-2 gap-2">
+          <span id="setup-type" className="text-[11px] font-bold text-muted uppercase tracking-wider">Interview Type</span>
+          <div role="group" aria-labelledby="setup-type" className="grid grid-cols-2 gap-2">
             {(["Technical", "HR"] as const).map(t => (
               <button
                 key={t}
                 type="button"
+                aria-pressed={type === t}
                 onClick={() => onTypeChange(t)}
                 className={`py-2 rounded-xl text-xs font-semibold cursor-pointer border ${
                   type === t
@@ -55,8 +56,8 @@ export default function SetupForm({
 
         {type === "Technical" && (
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Technical Topic</label>
-            <input
+            <label htmlFor="setup-form-technical-topic" className="text-[11px] font-bold text-muted uppercase tracking-wider">Technical Topic</label>
+            <input id="setup-form-technical-topic"
               type="text"
               placeholder="e.g. DBMS, React Hooks, Python..."
               value={topic}
@@ -68,12 +69,13 @@ export default function SetupForm({
         )}
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Answering Format</label>
-          <div className="grid grid-cols-2 gap-2">
+          <span id="setup-format" className="text-[11px] font-bold text-muted uppercase tracking-wider">Answering Format</span>
+          <div role="group" aria-labelledby="setup-format" className="grid grid-cols-2 gap-2">
             {(["MCQ", "Written"] as const).map(f => (
               <button
                 key={f}
                 type="button"
+                aria-pressed={format === f}
                 onClick={() => onFormatChange(f)}
                 className={`py-2 rounded-xl text-xs font-semibold cursor-pointer border ${
                   format === f
@@ -88,12 +90,13 @@ export default function SetupForm({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Question Count</label>
-          <div className="grid grid-cols-3 gap-2">
+          <span id="setup-count" className="text-[11px] font-bold text-muted uppercase tracking-wider">Question Count</span>
+          <div role="group" aria-labelledby="setup-count" className="grid grid-cols-3 gap-2">
             {[5, 10, 20].map(c => (
               <button
                 key={c}
                 type="button"
+                aria-pressed={limit === c}
                 onClick={() => onLimitChange(c)}
                 className={`py-2 rounded-xl text-xs font-semibold cursor-pointer border ${
                   limit === c
