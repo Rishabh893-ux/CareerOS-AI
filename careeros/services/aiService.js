@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const UsageLog = require("../models/UsageLog");
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
