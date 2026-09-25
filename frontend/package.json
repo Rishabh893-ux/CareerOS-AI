@@ -2,6 +2,13 @@
   "name": "careeros-ai-frontend",
   "version": "1.0.0",
   "description": "CareerOS AI - Next.js client for the AI-powered career readiness platform (dashboard, resume builder & ATS checker, mock interviews, job tracker, outreach assistant, public portfolio).",
+  "license": "MIT",
+  "author": "Rishabh Kasaudhan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rishabh893-ux/CareerOS-AI.git",
+    "directory": "frontend"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
