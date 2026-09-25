@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Save, User, Link as LinkIcon, GitBranch, Briefcase, AlertCircle, Copy, CheckCircle } from "lucide-react";
-import { fetchWithAuth } from "@/app/api";
+import { fetchWithAuth } from "@/lib/api";
+import { useModalDialog } from "@/lib/useModalDialog";
 
 interface SettingsUser {
   name: string;
@@ -71,6 +72,8 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const dialogRef = useModalDialog<HTMLDivElement>(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
@@ -79,35 +82,39 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
       <div
         className="absolute inset-0 bg-black/50 transition-opacity"
         onClick={onClose}
+        aria-hidden
       />
 
       {/* Modal Content */}
-      <div className="relative bg-surface border border-line elevated-lg rounded-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="settings-title" tabIndex={-1}
+        className="relative bg-surface border border-line elevated-lg rounded-2xl w-full max-w-lg mx-4 overflow-hidden animate-fade-in-up">
         <div className="p-5 border-b border-line flex items-center justify-between bg-surface-alt">
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <User size={18} className="text-accent" /> Account Settings
+          <h2 id="settings-title" className="text-lg font-bold flex items-center gap-2">
+            <User size={18} className="text-accent" aria-hidden /> Account Settings
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface text-muted hover:text-foreground transition-all">
-            <X size={18} />
+          <button type="button" onClick={onClose} aria-label="Close settings" className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-foreground transition-all">
+            <X size={18} aria-hidden />
           </button>
         </div>
 
         <form onSubmit={handleSave} className="p-6 space-y-5">
           {error && (
-            <div className="p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-semibold flex items-center gap-2">
+            <div role="alert" className="p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-semibold flex items-center gap-2">
               <AlertCircle size={14} /> {error}
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
+              <label htmlFor="settings-name" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
                 Full Name
               </label>
               <div className="flex items-center gap-2 bg-surface-alt border border-line rounded-xl px-3 py-2.5 focus-within:border-accent transition-all">
-                <User size={15} className="text-muted" />
+                <User size={15} className="text-muted" aria-hidden />
                 <input
+                  id="settings-name"
                   type="text"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
@@ -117,35 +124,39 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
+              <label htmlFor="settings-username" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
                 Portfolio Username
               </label>
               <div className="flex items-center gap-2 bg-surface-alt border border-line rounded-xl px-3 py-2.5 focus-within:border-accent transition-all">
-                <LinkIcon size={15} className="text-muted" />
+                <LinkIcon size={15} className="text-muted" aria-hidden />
                 <span className="text-muted text-sm select-none">
                   {typeof window !== "undefined" ? window.location.host : ""}/p/
                 </span>
                 <input
+                  id="settings-username"
                   type="text"
+                  autoComplete="username"
+                  aria-describedby="settings-username-hint"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                   placeholder="your-name"
                   className="bg-transparent text-sm w-full text-foreground placeholder-muted focus:outline-none"
                 />
               </div>
-              <p className="text-[10px] text-muted mt-1.5">
+              <p id="settings-username-hint" className="text-xs text-muted mt-1.5">
                 Only letters, numbers, and hyphens allowed. This is required for your public portfolio link.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
+                <label htmlFor="settings-github" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
                   GitHub Username
                 </label>
                 <div className="flex items-center gap-2 bg-surface-alt border border-line rounded-xl px-3 py-2.5 focus-within:border-accent transition-all">
-                  <GitBranch size={15} className="text-muted" />
+                  <GitBranch size={15} className="text-muted" aria-hidden />
                   <input
+                    id="settings-github"
                     type="text"
                     value={githubUsername}
                     onChange={(e) => setGithubUsername(e.target.value)}
@@ -156,12 +167,13 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
+                <label htmlFor="settings-linkedin" className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
                   LinkedIn URL
                 </label>
                 <div className="flex items-center gap-2 bg-surface-alt border border-line rounded-xl px-3 py-2.5 focus-within:border-accent transition-all">
-                  <Briefcase size={15} className="text-muted" />
+                  <Briefcase size={15} className="text-muted" aria-hidden />
                   <input
+                    id="settings-linkedin"
                     type="url"
                     value={linkedinUrl}
                     onChange={(e) => setLinkedinUrl(e.target.value)}
@@ -184,7 +196,7 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
                 {copied ? "Copied Link!" : "Copy Portfolio Link"}
               </button>
             ) : (
-              <span className="text-[10px] text-muted">Set a username to get your public link</span>
+              <span className="text-xs text-muted">Set a username to get your public link</span>
             )}
 
             <div className="flex items-center gap-3">

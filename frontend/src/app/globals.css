@@ -1,48 +1,104 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Source+Serif+4:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
-/* ─── Theme tokens: light = "Ivory Editorial", dark = "Aurora Flat" ─── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Design tokens
+   Two layers:
+   1. Palette tokens (--background, --accent, ...) — also exposed to Tailwind.
+   2. Component tokens (--card-*, --btn-*, --field-*, --chrome-*) — what the
+      component classes below read. Each theme only sets values here; no
+      component rule is ever written twice for a theme.
+   Both themes share one teal accent family so the brand reads the same.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Light — "Porcelain": white paper on a cool canvas, hairlines, soft depth.
+   Contrast on --surface: foreground 18.7:1, muted 6.3:1, accent 5.5:1;
+   white on --accent 5.5:1. */
 :root {
-  --background: #faf9f5;
-  --foreground: #141413;
+  --background: #f6f7f9;
+  --foreground: #0b1220;
   --surface: #ffffff;
-  --surface-alt: #f6f3ec;
-  --line: #e8e2d3;
-  --muted: #6b6559;
-  --accent: #d97757;
+  --surface-alt: #f3f5f8;
+  --line: #e3e7ed;
+  --line-strong: #d3d9e2;
+  --muted: #566072;
+  --accent: #0f766e;
   --accent-contrast: #ffffff;
-  --accent-soft: #f3e3d9;
-  --success: #1f8b5c;
+  --accent-soft: #e8f3f1;
+  --success: #15803d;
   --warning: #b45309;
-  --danger: #c1443c;
-  --heading-font: 'Source Serif 4', Georgia, serif;
-  --sidebar-width: 260px;
-  --sidebar-collapsed: 76px;
-  --shadow-color: 87, 62, 34;
-  --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.07);
-  --shadow-md: 0 1px 3px rgba(var(--shadow-color), 0.09), 0 18px 40px -14px rgba(var(--shadow-color), 0.28);
-  --shadow-lg: 0 4px 10px rgba(var(--shadow-color), 0.12), 0 30px 60px -16px rgba(var(--shadow-color), 0.34);
+  --danger: #c0362c;
+  --heading-font: 'Inter', system-ui, sans-serif;
+
+  --shadow-color: 16, 24, 40;
+  --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.05);
+  --shadow-md: 0 1px 2px rgba(var(--shadow-color), 0.04), 0 4px 12px -2px rgba(var(--shadow-color), 0.06), 0 16px 32px -16px rgba(var(--shadow-color), 0.10);
+  --shadow-lg: 0 2px 4px rgba(var(--shadow-color), 0.05), 0 12px 24px -6px rgba(var(--shadow-color), 0.10), 0 32px 56px -24px rgba(var(--shadow-color), 0.16);
+
+  --canvas-wash: none;
+  --card-bg: var(--surface);
+  --card-border: var(--line);
+  --card-shadow: var(--shadow-md);
+  --card-highlight: inset 0 0 0 0 transparent;
+  --hero-tint: 7%;
+  --field-bg: var(--surface);
+  --field-border: var(--line-strong);
+  --field-inset: inset 0 1px 2px rgba(var(--shadow-color), 0.04);
+  --btn-bg: var(--accent);
+  --btn-bg-hover: color-mix(in srgb, var(--accent) 88%, black);
+  --btn-highlight: rgba(255, 255, 255, 0.14);
+  --ghost-border: var(--line-strong);
+  --ghost-border-hover: var(--foreground);
+  --chrome-sidebar: var(--surface);
+  --chrome-header: color-mix(in srgb, var(--surface) 85%, var(--background));
+  --tag-bg: var(--surface);
 }
 
+/* Dark — "Graphite": neutral near-black; cards sit *lighter* than the canvas
+   (elevation reads as light), softened white text, calmer teal.
+   Contrast on --surface: foreground 14.9:1, muted 7.0:1, accent 8.6:1;
+   --accent-contrast on --accent 8.0:1. */
 :root[data-theme="dark"] {
-  --background: #0b1120;
-  --foreground: #eaf0fa;
-  --surface: #0e1526;
-  --surface-alt: #0a0f1c;
-  --line: #1e293f;
-  --muted: #6b7a99;
-  --accent: #2dd4bf;
-  --accent-contrast: #0b1120;
-  --accent-soft: rgba(45, 212, 191, 0.12);
-  --success: #34d399;
+  --background: #0a0c10;
+  --foreground: #e6e9ef;
+  --surface: #13161c;
+  --surface-alt: #0e1116;
+  --line: #222731;
+  --line-strong: #2e3542;
+  --muted: #98a1b1;
+  --accent: #3ec6b5;
+  --accent-contrast: #04211e;
+  --accent-soft: rgba(62, 198, 181, 0.12);
+  --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
   --heading-font: 'Inter', system-ui, sans-serif;
+
   --shadow-color: 0, 0, 0;
   --shadow-sm: 0 1px 2px rgba(var(--shadow-color), 0.4);
-  --shadow-md: 0 2px 8px rgba(var(--shadow-color), 0.35), 0 12px 32px -10px rgba(var(--shadow-color), 0.55);
-  --shadow-lg: 0 4px 16px rgba(var(--shadow-color), 0.4), 0 24px 52px -14px rgba(var(--shadow-color), 0.65);
+  --shadow-md: 0 1px 2px rgba(var(--shadow-color), 0.5), 0 8px 24px -8px rgba(var(--shadow-color), 0.6);
+  --shadow-lg: 0 2px 6px rgba(var(--shadow-color), 0.5), 0 20px 44px -12px rgba(var(--shadow-color), 0.7);
+
+  /* One faint glow at the top of the canvas — atmosphere, not decoration */
+  --canvas-wash: radial-gradient(ellipse 1100px 480px at 50% -14%, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+  --card-bg: var(--surface);
+  --card-border: var(--line);
+  --card-shadow: var(--shadow-md);
+  /* A hairline of light on the top edge gives cards a machined, lit edge */
+  --card-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --hero-tint: 9%;
+  --field-bg: var(--surface-alt);
+  --field-border: var(--line);
+  --field-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  --btn-bg: var(--accent);
+  --btn-bg-hover: color-mix(in srgb, var(--accent) 88%, white);
+  --btn-highlight: rgba(255, 255, 255, 0.22);
+  --ghost-border: var(--line-strong);
+  --ghost-border-hover: var(--muted);
+  --chrome-sidebar: color-mix(in srgb, var(--surface) 55%, var(--background));
+  --chrome-header: color-mix(in srgb, var(--surface) 55%, var(--background));
+  --tag-bg: var(--surface-alt);
 }
 
 @theme inline {
@@ -51,6 +107,7 @@
   --color-surface: var(--surface);
   --color-surface-alt: var(--surface-alt);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-contrast: var(--accent-contrast);
@@ -66,31 +123,19 @@
 
 body {
   background-color: var(--background);
+  background-image: var(--canvas-wash);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
-  background-image: radial-gradient(ellipse 900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
-    radial-gradient(ellipse 700px 500px at 100% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent);
-  background-attachment: fixed;
-  background-repeat: no-repeat;
   position: relative;
-}
-
-/* Subtle paper grain — editorial texture, light mode only (dark mode reads moody enough on its own) */
-:root:not([data-theme="dark"]) body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.4;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
 h1, h2, h3, .font-heading {
   font-family: var(--heading-font);
+  letter-spacing: -0.015em;
 }
 
 /* ─── Elevation ─── */
@@ -98,62 +143,31 @@ h1, h2, h3, .font-heading {
 .elevated-sm { box-shadow: var(--shadow-sm); }
 .elevated-lg { box-shadow: var(--shadow-lg); }
 
-/* ─── Panels / Cards (flat, no blur) ─── */
+/* ─── Cards ───
+   One card surface for every content panel. The class names are kept because
+   components use them, but they all share this rule. Cards are content, not
+   controls, so they have no hover state. */
+.premium-card,
 .glass-panel,
-.metric-card,
+.portfolio-section,
 .hero-card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  box-shadow: var(--shadow-md);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.glass-panel:hover,
-.metric-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-
-.glass-panel-glow {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  box-shadow: var(--shadow-md);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.glass-panel-glow:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); }
-
-/* ─── Premium card: gradient-hairline border + backdrop blur ─── */
-.premium-card {
   position: relative;
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 1.25rem;
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow: var(--card-highlight), var(--card-shadow);
 }
-.premium-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--accent) 55%, transparent),
-    color-mix(in srgb, var(--accent) 4%, transparent) 45%,
-    color-mix(in srgb, var(--accent) 30%, transparent));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+.glass-panel {
+  border-radius: 1rem;
 }
-.premium-card:hover { box-shadow: var(--shadow-lg); }
+
+/* Hero: the same card with one quiet accent tint in the corner */
+.hero-card {
+  background-image: radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) var(--hero-tint), transparent), transparent 55%);
+}
 
 .premium-badge {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -164,41 +178,24 @@ h1, h2, h3, .font-heading {
   border-radius: 999px;
 }
 
-/* ─── Light-mode-only depth: soft inner sheen on cards, recessed field feel ─── */
-:root:not([data-theme="dark"]) .glass-panel,
-:root:not([data-theme="dark"]) .glass-panel-glow,
-:root:not([data-theme="dark"]) .metric-card,
-:root:not([data-theme="dark"]) .hero-card {
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-:root:not([data-theme="dark"]) .glass-panel:hover,
-:root:not([data-theme="dark"]) .glass-panel-glow:hover,
-:root:not([data-theme="dark"]) .metric-card:hover {
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+/* ─── App chrome ─── */
+.app-sidebar { background: var(--chrome-sidebar); box-shadow: none; }
+.app-header { background: var(--chrome-header); box-shadow: none; }
+
+/* ─── Fields: recessed wells inside cards ─── */
+input[class~="bg-surface-alt"],
+textarea[class~="bg-surface-alt"],
+select[class~="bg-surface-alt"] {
+  background-color: var(--field-bg);
+  border-color: var(--field-border);
+  box-shadow: var(--field-inset);
 }
 
-:root:not([data-theme="dark"]) div[class~="bg-surface-alt"][class~="border-line"],
-:root:not([data-theme="dark"]) textarea[class~="bg-surface-alt"][class~="border-line"],
-:root:not([data-theme="dark"]) input[class~="bg-surface-alt"][class~="border-line"] {
-  box-shadow: inset 0 1px 3px rgba(87, 62, 34, 0.05);
-}
-
-/* ─── Brand mark: gradient sheen for logo/avatar badges (both themes) ─── */
+/* ─── Brand mark: solid accent tile with a hairline highlight ─── */
 .brand-mark {
   position: relative;
-  background-image: linear-gradient(155deg, color-mix(in srgb, var(--accent) 100%, white 16%), var(--accent) 60%, color-mix(in srgb, var(--accent) 100%, black 10%));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -6px 10px -6px rgba(0, 0, 0, 0.18), 0 6px 16px -6px color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-.hero-card {
-  border-radius: 1.25rem;
-  border-top: 3px solid var(--accent);
-  background-image: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%);
-}
-
-/* ─── Score Ring Glow ─── */
-.score-ring-glow {
-  filter: drop-shadow(0 0 6px var(--accent-soft));
+  background-color: var(--accent);
+  box-shadow: inset 0 1px 0 var(--btn-highlight), 0 1px 2px rgba(var(--shadow-color), 0.15);
 }
 
 /* ─── Stat Badge ─── */
@@ -213,55 +210,28 @@ h1, h2, h3, .font-heading {
   letter-spacing: 0.03em;
 }
 
-.stat-badge-blue {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-}
-
 .stat-badge-purple {
   background: var(--surface-alt);
   border: 1px solid var(--line);
   color: var(--foreground);
 }
 
-.stat-badge-green {
-  background: color-mix(in srgb, var(--success) 14%, transparent);
-  border: 1px solid var(--success);
-  color: var(--success);
-}
-
-.stat-badge-amber {
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
-  border: 1px solid var(--warning);
-  color: var(--warning);
-}
-
-/* ─── Skill Tag ─── */
+/* ─── Skill Tag (static label, so no hover state) ─── */
 .skill-tag {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.65rem;
   border-radius: 0.5rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  background: var(--surface-alt);
+  background: var(--tag-bg);
   border: 1px solid var(--line);
   color: var(--muted);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-}
-
-.skill-tag:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
 
 /* ─── Section Heading ─── */
 .section-heading {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -286,32 +256,20 @@ h1, h2, h3, .font-heading {
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 /* ─── Animations ─── */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-}
-.animate-float { animation: float 5s ease-in-out infinite; }
-
 @keyframes float-slow {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   50% { transform: translateY(-8px) rotate(1deg); }
 }
 .animate-float-slow { animation: float-slow 7s ease-in-out infinite; }
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.55; }
-}
-.animate-pulse-glow { animation: pulse-glow 2.5s infinite ease-in-out; }
 
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(16px); }
@@ -325,27 +283,12 @@ h1, h2, h3, .font-heading {
 }
 .animate-fade-in { animation: fade-in 0.25s ease-out forwards; }
 
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+/* ─── Keyboard focus ─── */
+/* Components use outline-none freely; this restores a visible ring for keyboard users only. */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
 }
-.animate-shimmer {
-  background: linear-gradient(90deg, var(--surface-alt) 25%, var(--line) 50%, var(--surface-alt) 75%);
-  background-size: 200% auto;
-  animation: shimmer 1.8s linear infinite;
-  border-radius: 0.5rem;
-}
-
-@keyframes dash-in {
-  from { stroke-dashoffset: 251.2; }
-  to   { stroke-dashoffset: var(--target-offset); }
-}
-.animate-ring { animation: dash-in 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-
-@keyframes spin-slow {
-  to { transform: rotate(360deg); }
-}
-.animate-spin-slow { animation: spin-slow 2s linear infinite; }
 
 /* ─── Inputs ─── */
 input, textarea, select {
@@ -357,37 +300,46 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* ─── Button base ─── */
+/* ─── Buttons ─── */
 .btn-primary {
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) 100%, white 14%), var(--accent) 60%, color-mix(in srgb, var(--accent) 100%, black 6%));
+  background-color: var(--btn-bg);
   color: var(--accent-contrast);
   font-weight: 600;
   border-radius: 0.75rem;
-  transition: all 0.2s ease;
   border: none;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(var(--shadow-color), 0.06), 0 8px 20px -6px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: inset 0 1px 0 var(--btn-highlight), 0 1px 2px rgba(var(--shadow-color), 0.12);
 }
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), 0 2px 4px rgba(var(--shadow-color), 0.08), 0 14px 30px -6px color-mix(in srgb, var(--accent) 55%, transparent);
-}
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:hover { background-color: var(--btn-bg-hover); }
+.btn-primary:active { box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18); }
 
 .btn-ghost {
   background: var(--surface);
   color: var(--foreground);
   font-weight: 500;
   border-radius: 0.75rem;
-  border: 1px solid var(--line);
-  transition: all 0.2s ease;
+  border: 1px solid var(--ghost-border);
   cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
   box-shadow: var(--shadow-sm);
 }
-.btn-ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: var(--shadow-md);
+.btn-ghost:hover { border-color: var(--ghost-border-hover); }
+
+/* ─── Reduce Motion: drop looping, floating and entrance animations ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Increase Contrast: firmer secondary text and hairlines ─── */
+@media (prefers-contrast: more) {
+  :root { --muted: #3b4353; --line: #aab3c0; --line-strong: #8d97a6; }
+  :root[data-theme="dark"] { --muted: #c0c7d3; --line: #3d4554; --line-strong: #505a6c; }
 }
 
 /* ─── Resume export print sizing ─── */

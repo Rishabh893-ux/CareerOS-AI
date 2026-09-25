@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, Sparkles, AlertCircle, CheckCircle2, PlayCircle } from "lucide-react";
-import { API_BASE, saveToken } from "@/app/api";
+import { API_BASE, saveToken } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -107,9 +107,9 @@ export default function LoginPage() {
           <div className="w-12 h-12 rounded-2xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast text-xl mb-4">
             C
           </div>
-          <h2 className="font-heading text-2xl font-bold">
+          <h1 className="font-heading text-2xl font-bold">
             {isForgotPassword ? "Forgot Password" : "Welcome to CareerOS AI"}
-          </h2>
+          </h1>
           <p className="text-sm text-muted mt-1">
             {isForgotPassword ? "Enter your email to receive a password reset link" : "AI-Powered Career Intelligence Suite"}
           </p>
@@ -143,14 +143,14 @@ export default function LoginPage() {
               </h3>
 
               {error && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
-                  <AlertCircle size={18} className="shrink-0" />
+                <div role="alert" className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
+                  <AlertCircle size={18} className="shrink-0" aria-hidden />
                   <span>{error}</span>
                 </div>
               )}
 
               {message && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm break-all">
+                <div role="status" className="flex items-center gap-3 p-4 rounded-xl bg-success/10 border border-success/30 text-success text-sm break-all">
                   <CheckCircle2 size={18} className="shrink-0" />
                   <span>
                     {message.includes("http") ? (
@@ -168,12 +168,14 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+                <label htmlFor="forgot-email" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                   Email Address
                 </label>
                 <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                   <Mail size={16} className="text-muted" />
                   <input
+                    id="forgot-email"
+                    autoComplete="email"
                     type="email"
                     placeholder="name@example.com"
                     value={email}
@@ -214,19 +216,21 @@ export default function LoginPage() {
               </h3>
 
               {error && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
-                  <AlertCircle size={18} className="shrink-0" />
+                <div role="alert" className="flex items-center gap-3 p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger text-sm">
+                  <AlertCircle size={18} className="shrink-0" aria-hidden />
                   <span>{error}</span>
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+                <label htmlFor="login-email" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                   Email Address
                 </label>
                 <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                   <Mail size={16} className="text-muted" />
                   <input
+                    id="login-email"
+                    autoComplete="email"
                     type="email"
                     placeholder="name@example.com"
                     value={email}
@@ -238,12 +242,14 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted uppercase tracking-wider block">
+                <label htmlFor="login-password" className="text-xs font-semibold text-muted uppercase tracking-wider block">
                   Password
                 </label>
                 <div className="flex items-center gap-3 bg-surface-alt border border-line rounded-xl px-4 py-3 focus-within:border-accent transition-all">
                   <Lock size={16} className="text-muted" />
                   <input
+                    id="login-password"
+                    autoComplete="current-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
