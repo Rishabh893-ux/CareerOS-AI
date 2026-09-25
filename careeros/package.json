@@ -2,6 +2,13 @@
   "name": "careeros-ai-backend",
   "version": "1.0.0",
   "description": "CareerOS AI - backend API (Auth, Profile, Resume/ATS, GitHub Analyzer, Career Score, Growth Roadmap, Mock Interviews, Job Tracker, Outreach AI, AI Copilot)",
+  "license": "MIT",
+  "author": "Rishabh Kasaudhan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rishabh893-ux/CareerOS-AI.git",
+    "directory": "careeros"
+  },
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
