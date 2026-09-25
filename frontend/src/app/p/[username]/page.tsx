@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import PortfolioView from "@/components/portfolio/PortfolioView";
 import { PortfolioData } from "@/types/portfolio";
+import { API_BASE } from "@/lib/api";
 
 interface PageProps {
   params: Promise<{ username: string }>;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
 async function fetchPortfolio(username: string): Promise<PortfolioData | null> {
   try {
-    const res = await fetch(`${API_BASE}/profile/public/${username}`, {
+    const res = await fetch(`${API_BASE}/profile/public/${encodeURIComponent(username)}`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
@@ -33,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = `${data.user.name} — CareerOS AI Portfolio`;
   const description =
-    data.profile.careerGoal ||
+    data.profile.careerGoal?.trim() ||
     `View ${data.user.name}'s skills, projects, and GitHub activity on CareerOS AI.`;
 
   return {

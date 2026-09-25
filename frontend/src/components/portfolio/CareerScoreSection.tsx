@@ -1,39 +1,31 @@
-import { TrendingUp, CheckCircle2 } from "lucide-react";
-import { ScoreRing } from "@/components/dashboard/ScoreRing";
+import { Sparkles, CheckCircle2 } from "lucide-react";
+import SectionHeading from "./SectionHeading";
 
 interface CareerScoreSectionProps {
   careerScore?: {
     score: number;
     strengths: string[];
-    // weaknesses are intentionally never shown here - that's private,
-    // self-improvement-facing data, not something to publish for recruiters.
+    // The numeric score and weaknesses are intentionally never shown here -
+    // they're private, self-improvement-facing data. A visitor sees only the
+    // strengths the analysis found, framed as highlights.
   };
 }
 
 export default function CareerScoreSection({ careerScore }: CareerScoreSectionProps) {
-  if (!careerScore) return null;
+  const strengths = careerScore?.strengths?.filter(Boolean) || [];
+  if (strengths.length === 0) return null;
 
   return (
-    <div className="glass-panel-glow p-8 animate-fade-in-up flex flex-col sm:flex-row items-center gap-8">
-      <div className="shrink-0">
-        <ScoreRing score={careerScore.score} size={128} strokeWidth={8} />
-      </div>
-
-      <div className="flex-1 w-full">
-        <h3 className="text-sm font-bold text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-          <TrendingUp size={16} className="text-accent" /> Career Readiness
-        </h3>
-        {careerScore.strengths && careerScore.strengths.length > 0 && (
-          <ul className="space-y-2">
-            {careerScore.strengths.map((strength, idx) => (
-              <li key={idx} className="flex items-start gap-2 text-sm text-foreground leading-relaxed">
-                <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
-                <span>{strength}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+    <section aria-labelledby="portfolio-highlights" className="portfolio-section p-6 sm:p-8">
+      <SectionHeading id="portfolio-highlights" icon={Sparkles}>Highlights</SectionHeading>
+      <ul className="grid sm:grid-cols-2 gap-3">
+        {strengths.map((strength, idx) => (
+          <li key={idx} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed p-4 rounded-2xl bg-surface-alt border border-line">
+            <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" aria-hidden />
+            <span>{strength}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

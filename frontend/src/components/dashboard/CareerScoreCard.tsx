@@ -13,16 +13,17 @@ export function CareerScoreCard({ careerScore, refreshingScore, onRecalculate }:
     <div className="premium-card p-6 flex flex-col items-center">
       <div className="flex items-center justify-between w-full mb-2">
         <span className="section-heading"><TrendingUp size={12} className="text-accent" /> Career Score</span>
-        <button onClick={onRecalculate} disabled={refreshingScore}
-          className="p-1.5 hover:bg-surface-alt rounded-lg text-muted hover:text-foreground transition-all"
+        <button type="button" onClick={onRecalculate} disabled={refreshingScore}
+          aria-label={refreshingScore ? "Recalculating career score" : "Recalculate career score"}
+          className="w-8 h-8 flex items-center justify-center hover:bg-surface-alt rounded-lg text-muted hover:text-foreground transition-all"
           title="Recalculate">
-          <RefreshCw size={13} className={refreshingScore ? "animate-spin text-accent" : ""} />
+          <RefreshCw size={14} aria-hidden className={refreshingScore ? "animate-spin text-accent" : ""} />
         </button>
       </div>
 
       {careerScore ? (
         <>
-          <div className="my-3 animate-float">
+          <div className="my-3">
             <ScoreRing score={careerScore.score} />
           </div>
           <div className="w-full mt-2 space-y-1.5">

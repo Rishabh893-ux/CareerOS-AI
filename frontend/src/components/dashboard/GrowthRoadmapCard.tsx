@@ -48,7 +48,7 @@ export function GrowthRoadmapCard({
       </div>
 
       {roadmap ? (
-        <div className="flex-1 space-y-4 overflow-y-auto max-h-[600px] pr-1 custom-scrollbar">
+        <div className="flex-1 space-y-4">
           {/* Career path ladder */}
           {careerPath && careerPath.ladder.length > 0 && (
             <div className="p-3.5 rounded-2xl bg-accent-soft border border-accent/20">
@@ -59,9 +59,9 @@ export function GrowthRoadmapCard({
                 {careerPath.ladder.map((rung, idx) => (
                   <div key={idx} className="flex items-stretch gap-1 shrink-0">
                     <div className="w-[150px] p-2.5 rounded-xl bg-surface border border-line flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-accent uppercase tracking-wider">{rung.yearsRange}</span>
+                      <span className="text-[11px] font-bold text-accent uppercase tracking-wider">{rung.yearsRange}</span>
                       <span className="text-xs font-bold text-foreground leading-tight">{rung.title}</span>
-                      <span className="text-[10px] text-muted leading-snug">{rung.description}</span>
+                      <span className="text-[11px] text-muted leading-snug">{rung.description}</span>
                     </div>
                     {idx < careerPath.ladder.length - 1 && (
                       <div className="flex items-center justify-center">
@@ -96,7 +96,7 @@ export function GrowthRoadmapCard({
                     <span className="text-accent mr-1.5">Step {idx + 1}:</span>{step.title}
                   </h4>
                   <p className="text-[11px] text-muted mt-1 leading-relaxed">{step.description}</p>
-                  <div className="mt-2 flex items-center gap-1.5 text-[9px] text-accent/70 font-semibold uppercase tracking-wider">
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-accent/70 font-semibold uppercase tracking-wider">
                     <BookOpen size={9} />
                     <span>{step.resourceHint}</span>
                   </div>

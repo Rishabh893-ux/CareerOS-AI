@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
-import { fetchWithAuth } from "./api";
+import { fetchWithAuth } from "@/lib/api";
 import type { Profile } from "@/types/dashboard";
 import { HeroCard } from "@/components/dashboard/HeroCard";
 import { CareerScoreCard } from "@/components/dashboard/CareerScoreCard";
@@ -13,12 +13,15 @@ import { GithubRepositoriesCard } from "@/components/dashboard/GithubRepositorie
 import { GrowthRoadmapCard } from "@/components/dashboard/GrowthRoadmapCard";
 import { ProjectsPanel } from "@/components/dashboard/ProjectsPanel";
 import { ProfileEditForm } from "@/components/dashboard/ProfileEditForm";
+import { mergeSkills } from "@/lib/skills";
+import { linkProjectsToRepos } from "@/lib/projectRepos";
 
 export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userName, setUserName] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [refreshingScore, setRefreshingScore] = useState(false);
   const [refreshingGithub, setRefreshingGithub] = useState(false);
@@ -46,13 +49,16 @@ export default function Dashboard() {
     try {
       const data = await fetchWithAuth("/profile");
       setProfile(data);
-      setCareerGoal(data.careerGoal || "");
-      setRoadmapTargetRole(data.roadmap?.targetRole || data.careerGoal || "");
-      setSkillsText((data.skills || []).join(", "));
+      const goal = data.careerGoal?.trim() || "";
+      setCareerGoal(goal);
+      setRoadmapTargetRole(data.roadmap?.targetRole || goal);
+      // Edit the merged list so resume-extracted skills are visible and editable too.
+      setSkillsText(mergeSkills(data).join(", "));
       setProjectsList(data.projects || []);
-      const links = await fetchWithAuth("/profile/links");
-      if (links.githubUsername) setGithubUsername(links.githubUsername);
-      fetchWithAuth("/auth/me").then(me => setUserName(me.name || "")).catch(() => {});
+      fetchWithAuth("/auth/me").then(me => {
+        setUserName(me.name || "");
+        if (me.githubUsername) setGithubUsername(me.githubUsername);
+      }).catch(() => {});
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "";
       if (message === "Profile not found") {
@@ -71,19 +77,26 @@ export default function Dashboard() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    const skills = skillsText.split(",").map(s => s.trim()).filter(Boolean);
-    const education = eduInstitute ? [{
-      institute: eduInstitute, degree: eduDegree, branch: eduBranch,
-      cgpa: parseFloat(eduCgpa) || 0, graduationYear: parseInt(eduYear) || 2026,
-    }] : (profile?.education || []);
+    setSaving(true);
+    const skills = [...new Set(skillsText.split(",").map(s => s.trim()).filter(Boolean))];
+    // Drop resume-extracted skills the person removed, so what they typed is what is saved.
+    const resumeExtractedSkills = (profile?.resumeExtractedSkills || []).filter(s => skills.includes(s));
+    // The form edits the first education entry only; keep any others untouched.
+    const otherEducation = (profile?.education || []).slice(1);
+    const cgpa = parseFloat(eduCgpa);
+    const graduationYear = parseInt(eduYear, 10);
+    const education = eduInstitute.trim() ? [{
+      institute: eduInstitute.trim(), degree: eduDegree.trim(), branch: eduBranch.trim(),
+      cgpa: Number.isFinite(cgpa) ? cgpa : undefined,
+      graduationYear: Number.isFinite(graduationYear) ? graduationYear : undefined,
+    }, ...otherEducation] : (profile?.education || []);
     try {
       const updatedProfile = await fetchWithAuth("/profile", {
         method: "PUT",
-        body: JSON.stringify({ careerGoal, skills, education, projects: projectsList }),
+        body: JSON.stringify({ careerGoal: careerGoal.trim(), skills, resumeExtractedSkills, education, projects: projectsList }),
       });
       if (githubUsername) {
-        await fetchWithAuth("/profile/links", {
+        await fetchWithAuth("/auth/settings", {
           method: "PUT",
           body: JSON.stringify({ githubUsername }),
         });
@@ -93,16 +106,17 @@ export default function Dashboard() {
       loadProfile();
     } catch (err: unknown) {
       if (err instanceof Error) { setError(err.message || "Failed to save profile."); }
-      setLoading(false);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAddProject = () => {
-    if (!newProjTitle || !newProjDesc) return;
+    if (!newProjTitle.trim() || !newProjDesc.trim()) return;
     setProjectsList(prev => [...prev, {
-      title: newProjTitle, description: newProjDesc,
+      title: newProjTitle.trim(), description: newProjDesc.trim(),
       techStack: newProjStack.split(",").map(s => s.trim()).filter(Boolean),
-      repoUrl: newProjRepo,
+      repoUrl: newProjRepo.trim(),
     }]);
     setNewProjTitle(""); setNewProjDesc(""); setNewProjStack(""); setNewProjRepo("");
   };
@@ -127,7 +141,7 @@ export default function Dashboard() {
     if (!githubUsername) { setError("Please link a GitHub username first."); return; }
     setRefreshingGithub(true);
     try {
-      await fetchWithAuth("/profile/links", { method: "PUT", body: JSON.stringify({ githubUsername }) });
+      await fetchWithAuth("/auth/settings", { method: "PUT", body: JSON.stringify({ githubUsername }) });
       const data = await fetchWithAuth("/github/analyze?refresh=true");
       setProfile(prev => prev ? { ...prev, githubAnalysis: data } : null);
     } catch (err: unknown) {
@@ -138,7 +152,7 @@ export default function Dashboard() {
   };
 
   const handleGenerateRoadmap = async () => {
-    const role = roadmapTargetRole.trim() || profile?.careerGoal;
+    const role = roadmapTargetRole.trim() || profile?.careerGoal?.trim();
     if (!role) { setError("Please set a Target Role for your roadmap."); return; }
     setGeneratingRoadmap(true);
     try {
@@ -157,6 +171,11 @@ export default function Dashboard() {
 
   const handleEditProfile = () => {
     if (profile) {
+      // Start from the saved values so edits abandoned with Cancel don't reappear.
+      setCareerGoal(profile.careerGoal || "");
+      setSkillsText(mergeSkills(profile).join(", "));
+      setProjectsList(profile.projects || []);
+      setNewProjTitle(""); setNewProjDesc(""); setNewProjStack(""); setNewProjRepo("");
       setEduInstitute(profile.education?.[0]?.institute || "");
       setEduDegree(profile.education?.[0]?.degree || "");
       setEduBranch(profile.education?.[0]?.branch || "");
@@ -167,7 +186,8 @@ export default function Dashboard() {
   };
 
   // All skills combined
-  const allSkills = [...new Set([...(profile?.skills || []), ...(profile?.resumeExtractedSkills || [])])];
+  const allSkills = mergeSkills(profile);
+  const { projects: linkedProjects, otherRepos } = linkProjectsToRepos(profile?.projects, profile?.githubAnalysis?.repos, githubUsername);
   const displaySkills = skillsExpanded ? allSkills : allSkills.slice(0, 10);
 
   if (loading) {
@@ -189,10 +209,10 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-in-up">
       {/* Error Banner */}
       {error && (
-        <div className="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">
+        <div role="alert" className="flex items-center gap-3 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">
           <AlertCircle size={16} className="shrink-0" />
           <span>{error}</span>
-          <button onClick={() => setError("")} className="ml-auto text-danger/60 hover:text-danger text-xs">✕</button>
+          <button type="button" onClick={() => setError("")} aria-label="Dismiss error" className="ml-auto p-1 rounded-lg text-danger hover:bg-danger/10 text-xs">✕</button>
         </div>
       )}
 
@@ -200,7 +220,7 @@ export default function Dashboard() {
         /* ─── ONBOARDING / EDIT FORM ─── */
         <ProfileEditForm
           profile={profile}
-          loading={loading}
+          loading={saving}
           careerGoal={careerGoal}
           setCareerGoal={setCareerGoal}
           skillsText={skillsText}
@@ -236,10 +256,10 @@ export default function Dashboard() {
         <div className="space-y-6">
 
           {/* ── HERO BAR ── */}
-          <HeroCard profile={profile} userName={userName} allSkills={allSkills} onEditProfile={handleEditProfile} />
+          <HeroCard profile={profile} userName={userName} allSkills={allSkills} githubLinked={!!githubUsername} onEditProfile={handleEditProfile} />
 
           {/* ── SCORE + INSIGHTS ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <CareerScoreCard
               careerScore={profile?.careerScore}
               refreshingScore={refreshingScore}
@@ -256,35 +276,27 @@ export default function Dashboard() {
             onToggleExpanded={() => setSkillsExpanded(!skillsExpanded)}
           />
 
-          {/* ── GITHUB + ROADMAP ── */}
-          <div className="grid grid-cols-1 gap-5">
+          {/* ── WORK: curated projects, then GitHub evidence that isn't already a project ── */}
+          <ProjectsPanel projects={linkedProjects} />
 
-            {/* GitHub Profiler */}
-            <GithubProfilerCard
-              githubAnalysis={profile?.githubAnalysis}
-              refreshingGithub={refreshingGithub}
-              onSyncGithub={handleSyncGithub}
-            />
+          <GithubProfilerCard
+            githubAnalysis={profile?.githubAnalysis}
+            refreshingGithub={refreshingGithub}
+            onSyncGithub={handleSyncGithub}
+          />
 
-            {/* GitHub Repositories (New Section) */}
-            {profile?.githubAnalysis?.repos && profile.githubAnalysis.repos.length > 0 && (
-              <GithubRepositoriesCard repos={profile.githubAnalysis.repos} />
-            )}
+          {otherRepos.length > 0 && <GithubRepositoriesCard repos={otherRepos} />}
 
-            {/* Growth Roadmap */}
-            <GrowthRoadmapCard
-              roadmap={profile?.roadmap}
-              skillGap={profile?.skillGap}
-              careerPath={profile?.careerPath}
-              roadmapTargetRole={roadmapTargetRole}
-              generatingRoadmap={generatingRoadmap}
-              onRoadmapTargetRoleChange={setRoadmapTargetRole}
-              onGenerateRoadmap={handleGenerateRoadmap}
-            />
-          </div>
-
-          {/* ── PROJECTS PANEL ── */}
-          <ProjectsPanel projects={profile?.projects} />
+          {/* ── GROWTH ── */}
+          <GrowthRoadmapCard
+            roadmap={profile?.roadmap}
+            skillGap={profile?.skillGap}
+            careerPath={profile?.careerPath}
+            roadmapTargetRole={roadmapTargetRole}
+            generatingRoadmap={generatingRoadmap}
+            onRoadmapTargetRoleChange={setRoadmapTargetRole}
+            onGenerateRoadmap={handleGenerateRoadmap}
+          />
 
         </div>
       )}
