@@ -8,9 +8,13 @@ const Profile = require("../models/Profile");
 
 const router = express.Router();
 
+// User.email is stored lowercased and trimmed, so lookups must match that.
+const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
+
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!name || !email || !password) {
       return res.status(400).json({ error: "name, email, and password are required" });
     }
@@ -44,7 +48,8 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
@@ -204,8 +209,14 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 router.put("/settings", authMiddleware, async (req, res) => {
   try {
-    const { name, username, githubUsername, linkedinUrl } = req.body;
-    
+    // Partial update: only fields present in the body change, so callers can
+    // send just { githubUsername } without touching name or username.
+    const { username } = req.body;
+    const $set = {};
+    for (const field of ["name", "githubUsername", "linkedinUrl"]) {
+      if (req.body[field] !== undefined) $set[field] = req.body[field];
+    }
+
     // Check if username is already taken by someone else
     if (username) {
       const existing = await User.findOne({ username: username.toLowerCase(), _id: { $ne: req.userId } });
@@ -214,11 +225,12 @@ router.put("/settings", authMiddleware, async (req, res) => {
       }
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { name, username, githubUsername, linkedinUrl },
-      { new: true }
-    ).select("-passwordHash");
+    // username is unique+sparse: an empty string would still collide between
+    // accounts, so clearing it must remove the field instead of storing "".
+    const update = { $set };
+    if (username) $set.username = username;
+    else if (username !== undefined) update.$unset = { username: "" };
+    const user = await User.findByIdAndUpdate(req.userId, update, { new: true }).select("-passwordHash");
 
     res.json(user);
   } catch (err) {
@@ -228,7 +240,7 @@ router.put("/settings", authMiddleware, async (req, res) => {
 
 router.post("/forgot-password", async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = normalizeEmail(req.body.email);
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User with this email does not exist" });
