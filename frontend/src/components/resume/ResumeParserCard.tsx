@@ -94,6 +94,7 @@ export function ResumeParserCard({
         {selectedFile ? (
           <div className="space-y-2">
             {previewUrl ? (
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt="Preview" className="w-full max-h-24 object-contain rounded-lg mx-auto" />
             ) : (
               <div className="w-10 h-10 mx-auto rounded-xl bg-accent-soft border border-accent/20 flex items-center justify-center">

@@ -34,6 +34,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   if (res.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/login";
     }
     throw new Error("Session expired. Please log in again.");
@@ -72,6 +73,7 @@ export function getToken() {
 export function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/login";
   }
 }
