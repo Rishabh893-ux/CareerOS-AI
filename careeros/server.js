@@ -28,9 +28,16 @@ const ALLOWED_ORIGINS = [
   "https://careeros-ai-phi.vercel.app",
   "https://careeros-ai-rishabh-1f3c.vercel.app",
   "https://frontend-psi-sage-59.vercel.app",
+  "https://career-os-ai-ten.vercel.app",
+  "https://career-os-ai-rishabh-1f3c.vercel.app",
 ]
   .filter(Boolean)
   .map((o) => o.trim().replace(/\/$/, ""));
+
+// Every Vercel preview/production deployment of this project lives under the
+// same team subdomain suffix, so matching it by pattern means a new preview
+// URL (which changes on every deploy) never needs a code change here.
+const ALLOWED_ORIGIN_SUFFIX = "-rishabh-1f3c.vercel.app";
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -38,7 +45,12 @@ app.use(cors({
     // never a real cross-site browser request, so it's always allowed.
     if (!origin) return callback(null, true);
     const normalized = origin.trim().replace(/\/$/, "");
-    if (ALLOWED_ORIGINS.includes(normalized)) return callback(null, true);
+    if (
+      ALLOWED_ORIGINS.includes(normalized) ||
+      (normalized.startsWith("https://") && normalized.endsWith(ALLOWED_ORIGIN_SUFFIX))
+    ) {
+      return callback(null, true);
+    }
     callback(new Error(`Origin not allowed by CORS: ${origin}`));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
