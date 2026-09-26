@@ -155,17 +155,31 @@ All screenshots show the built-in demo account.
 
 ```mermaid
 flowchart LR
-    Client["Next.js frontend"]
-    Routes["Express API routes"]
-    Scoring["Scoring services"]
-    AI["AI service with quota and cache"]
+    Client["Next.js Frontend"]
+    Routes["Express API Routes"]
+    Scoring["Scoring Services"]
+    AI["AI Service\nquota + cache"]
     Mongo[("MongoDB Atlas")]
     Files[("Cloudinary")]
     Groq["Groq API"]
     GitHubAPI["GitHub API"]
     Adzuna["Adzuna API"]
 
-    Client -->|REST with JWT| Routes
+    subgraph Backend
+        Routes
+        Scoring
+        AI
+    end
+
+    subgraph External
+        Mongo
+        Files
+        Groq
+        GitHubAPI
+        Adzuna
+    end
+
+    Client -->|REST + JWT| Routes
     Routes --> Scoring
     Routes --> AI
     Scoring --> AI

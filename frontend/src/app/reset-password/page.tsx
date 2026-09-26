@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import { API_BASE } from "@/lib/api";

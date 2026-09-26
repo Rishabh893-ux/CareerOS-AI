@@ -26,7 +26,6 @@ export default function InterviewPage() {
   // Loading & Error States
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(true);
   const [error, setError] = useState("");
 
   const loadSessions = async () => {
@@ -35,8 +34,6 @@ export default function InterviewPage() {
       setSessions(data);
     } catch (err: unknown) {
       if (err instanceof Error) { setError(err.message || "Failed to load past sessions."); }
-    } finally {
-      setLoadingHistory(false);
     }
   };
 
