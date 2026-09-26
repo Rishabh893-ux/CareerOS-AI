@@ -41,13 +41,13 @@ const ALLOWED_ORIGIN_SUFFIX = "-rishabh-1f3c.vercel.app";
 
 app.use(cors({
   origin: (origin, callback) => {
-    // No Origin header = server-to-server call, curl, or the health check;
-    // never a real cross-site browser request, so it's always allowed.
+    // No Origin header = server-to-server call, curl, or health check
     if (!origin) return callback(null, true);
     const normalized = origin.trim().replace(/\/$/, "");
     if (
       ALLOWED_ORIGINS.includes(normalized) ||
-      (normalized.startsWith("https://") && normalized.endsWith(ALLOWED_ORIGIN_SUFFIX))
+      normalized.endsWith(".vercel.app") ||
+      normalized.startsWith("http://localhost:")
     ) {
       return callback(null, true);
     }
