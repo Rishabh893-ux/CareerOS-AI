@@ -17,8 +17,30 @@ const outreachRoutes = require("./routes/outreach");
 const app = express();
 
 // ── CORS ──
+// Trim whitespace/trailing slashes from every origin (including FRONTEND_URL)
+// so a stray newline or trailing "/" pasted into an env var can't silently
+// break matching — that failure mode is invisible (no error, just a missing
+// Access-Control-Allow-Origin header) and hard to diagnose from the outside.
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  process.env.FRONTEND_URL,
+  "https://careeros-ai-phi.vercel.app",
+  "https://careeros-ai-rishabh-1f3c.vercel.app",
+  "https://frontend-psi-sage-59.vercel.app",
+]
+  .filter(Boolean)
+  .map((o) => o.trim().replace(/\/$/, ""));
+
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", process.env.FRONTEND_URL, "https://careeros-ai-phi.vercel.app"],
+  origin: (origin, callback) => {
+    // No Origin header = server-to-server call, curl, or the health check;
+    // never a real cross-site browser request, so it's always allowed.
+    if (!origin) return callback(null, true);
+    const normalized = origin.trim().replace(/\/$/, "");
+    if (ALLOWED_ORIGINS.includes(normalized)) return callback(null, true);
+    callback(new Error(`Origin not allowed by CORS: ${origin}`));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
