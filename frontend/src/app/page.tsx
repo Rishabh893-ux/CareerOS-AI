@@ -72,6 +72,7 @@ export default function Dashboard() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadProfile(); }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
