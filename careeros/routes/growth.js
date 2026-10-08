@@ -35,6 +35,7 @@ Return ONLY JSON: { "missingSkills": ["skill1", "skill2", ...] } (max 10 items)`
     const result = await callAI("skill_gap", prompt, {
       jsonSchemaHint: true,
       fallbackData: sameRole ? cached?.toObject() : null,
+      userId: req.userId,
     });
 
     if (!result.success && !result.data) {
@@ -92,6 +93,7 @@ Return ONLY JSON in this shape, max 6 steps, ordered by priority:
     const result = await callAI("roadmap", prompt, {
       jsonSchemaHint: true,
       fallbackData: sameRole ? cached?.toObject() : null,
+      userId: req.userId,
     });
 
     if (!result.success && !result.data) {
@@ -148,6 +150,7 @@ Return ONLY JSON in this exact shape:
     const result = await callAI("career_path", prompt, {
       jsonSchemaHint: true,
       fallbackData: sameRole ? cached?.toObject() : null,
+      userId: req.userId,
     });
 
     if (!result.success && !result.data) {

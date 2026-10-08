@@ -56,7 +56,7 @@ Do not invent facts that aren't in the data above (no guesses about code quality
 When you mention a count, use the exact number from the data (say "10 of 13 repos", never "all" or "most").
 Return ONLY JSON: { "summary": "..." }`;
 
-    const result = await callAI("github_analysis", prompt, { jsonSchemaHint: true });
+    const result = await callAI("github_analysis", prompt, { jsonSchemaHint: true, userId: req.userId });
     const aiSummary = result.success && typeof result.data?.summary === "string" ? result.data.summary.trim() : "";
 
     profile.githubAnalysis = {

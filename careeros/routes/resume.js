@@ -122,7 +122,7 @@ CRITICAL EXTRACTION RULES:
 Resume text:
 """${resumeText.slice(0, 8000)}"""`;
 
-    const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true });
+    const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true, userId: req.userId });
     console.log("[Resume Parse] Claude Success:", result.success, "Data:", result.data);
     
     let extractedSkills = [];
@@ -132,7 +132,7 @@ Resume text:
     if (result.success && result.data && typeof result.data === "object") {
       let { skills, careerGoal, education, experience, certifications, projects, phone, location, portfolioUrl, githubUrl, linkedinUrl } = result.data;
       // Store the goal as plain text; strip a label the model may add anyway.
-      careerGoal = typeof careerGoal === "string" ? careerGoal.replace(/^s*objectives*:s*/i, "").trim() : "";
+      careerGoal = typeof careerGoal === "string" ? careerGoal.replace(/^\s*objective\s*:\s*/i, "").trim() : "";
 
       // Update basic fields on Profile
       const profileUpdates = {
@@ -232,7 +232,7 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
 
     // A few words aren't a job description; treat them as none.
     const hasJd = jobDescription.split(/\s+/).length >= 15;
-    const keywordList = hasJd ? await extractJobKeywords(jobDescription) : null;
+    const keywordList = hasJd ? await extractJobKeywords(jobDescription, "ats_check", req.userId) : null;
     const analysis = analyzeAts(resumeText, keywordList);
 
     const result = {
@@ -279,7 +279,7 @@ Original Text:
 """${text.slice(0, 2000)}"""`;
     }
 
-    const result = await callAI("enhance_bullet", prompt);
+    const result = await callAI("enhance_bullet", prompt, { userId: req.userId });
     if (!result.success) return res.status(503).json({ error: result.error });
 
     const enhancedText = result.data.replace(/^[-*•]\s*/gm, '').trim();
@@ -329,7 +329,7 @@ Rules:
 - Close with a clear, confident call to action.
 - Return ONLY the letter body text, no subject line, no "Dear Hiring Manager" placeholders beyond a normal greeting, no markdown formatting.`;
 
-    const result = await callAI("cover_letter", prompt);
+    const result = await callAI("cover_letter", prompt, { userId: req.userId });
     if (!result.success) return res.status(503).json({ error: result.error });
 
     res.json({ letter: typeof result.data === "string" ? result.data.trim() : String(result.data) });

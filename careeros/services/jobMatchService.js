@@ -22,7 +22,7 @@ async function analyzeJobMatch(jobId, userId) {
       return;
     }
 
-    const keywordList = await extractJobKeywords(job.jobDescription, "job_match_advanced");
+    const keywordList = await extractJobKeywords(job.jobDescription, "job_match_advanced", userId);
     const { keywords, breakdown } = analyzeAts(resumeText, keywordList);
     const all = [...keywords.required, ...keywords.preferred];
 
