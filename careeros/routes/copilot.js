@@ -41,7 +41,7 @@ Answer concisely and actionably.
 
 User question: "${question}"`;
 
-    const result = await callAI("ai_copilot", prompt);
+    const result = await callAI("ai_copilot", prompt, { userId: req.userId });
 
     if (!result.success) {
       return res.status(503).json({

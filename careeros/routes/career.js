@@ -47,6 +47,7 @@ Return ONLY JSON in this exact shape:
     const result = await callAI("career_score", prompt, {
       jsonSchemaHint: true,
       fallbackData: cached ? cached.toObject() : null,
+      userId: req.userId,
     });
 
     if (!result.success && !result.data) {
