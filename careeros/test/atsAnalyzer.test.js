@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { analyzeAts, fallbackKeywords, containsTerm, normalize } = require("../services/atsAnalyzer");
+const { analyzeAts, fallbackKeywords, containsTerm, normalize, findTerms } = require("../services/atsAnalyzer");
 
 const has = (text, term) => containsTerm(normalize(text), term, text);
 
@@ -97,4 +97,18 @@ test("skill-category bullets aren't judged as achievements", () => {
   assert.equal(byKey.quantified.detail, "1 bullet with numbers (aim for at least 3)");
   assert.equal(byKey.skills.pass, true);
   assert.equal(byKey.experience.pass, true);
+});
+
+test("\"Golang\" counts as Go, but the word \"go\" doesn't", () => {
+  const golang = analyzeAts("Experience\nBuilt CLIs in Golang.", { required: ["Go"], preferred: [] });
+  assert.equal(golang.keywords.required[0].found, true);
+  const verb = analyzeAts("Experience\nReady to go the extra mile.", { required: ["Go"], preferred: [] });
+  assert.equal(verb.keywords.required[0].found, false);
+});
+
+test("findTerms checks any number of terms with the ATS matching rules", () => {
+  const terms = Array.from({ length: 20 }, (_, i) => `Skill${i}`).concat(["Kubernetes"]);
+  const found = findTerms("Deployed services on k8s.", terms);
+  assert.equal(found.length, 21, "no 15-term cap");
+  assert.deepEqual(found.at(-1), { term: "Kubernetes", found: true });
 });
