@@ -304,13 +304,15 @@ router.put("/settings", authMiddleware, validate(schemas.settings), async (req, 
   }
 });
 
+// The same reply whether or not the email has an account, so this endpoint
+// can't be used to find out who is registered.
+const RESET_REQUESTED = "If an account exists for that email, a password reset link has been sent to it.";
+
 router.post("/forgot-password", validate(schemas.forgotPassword), async (req, res) => {
   try {
     const email = normalizeEmail(req.body.email);
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User with this email does not exist" });
-    }
+    if (!user) return res.json({ message: RESET_REQUESTED });
 
     const resetToken = crypto.randomBytes(20).toString("hex");
     user.resetPasswordToken = resetToken;
@@ -320,33 +322,37 @@ router.post("/forgot-password", validate(schemas.forgotPassword), async (req, re
     const frontendUrl = process.env.FRONTEND_URL || "https://careeros-ai-phi.vercel.app";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    // Dummy email log if nodemailer not configured properly
-    console.log(`[Email] Password reset link for ${email}: ${resetUrl}`);
-
-    if (process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.SMTP_EMAIL,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      });
-
-      const mailOptions = {
-        from: process.env.SMTP_EMAIL,
-        to: user.email,
-        subject: "CareerOS AI Password Reset",
-        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
-          Please click on the following link, or paste this into your browser to complete the process:\n\n
-          ${resetUrl}\n\n
-          If you did not request this, please ignore this email and your password will remain unchanged.\n`,
-      };
-
-      await transporter.sendMail(mailOptions);
-      res.json({ message: "Password reset link sent to your email!" });
-    } else {
-      res.json({ message: `Testing Mode: No email server configured. Your reset link is: ${resetUrl}` });
+    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+      // Without email, only local development may see the link. Anywhere else,
+      // handing it back would let anyone reset anyone's password.
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Email] Password reset link for ${email}: ${resetUrl}`);
+        return res.json({ message: `Development mode: no email server configured. Your reset link is: ${resetUrl}` });
+      }
+      console.error("[Email] SMTP_EMAIL / SMTP_PASSWORD not set; password reset email was not sent.");
+      return res.json({ message: RESET_REQUESTED });
     }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.SMTP_EMAIL,
+      to: user.email,
+      subject: "CareerOS AI Password Reset",
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+        Please click on the following link, or paste this into your browser to complete the process:\n\n
+        ${resetUrl}\n\n
+        If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ message: RESET_REQUESTED });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
