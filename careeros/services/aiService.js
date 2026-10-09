@@ -14,11 +14,12 @@ const USER_RATE_LIMIT_PER_MINUTE = parseInt(process.env.AI_USER_RATE_LIMIT || "1
 const GLOBAL_RATE_LIMIT_PER_MINUTE = parseInt(process.env.AI_GLOBAL_RATE_LIMIT || "30", 10);
 let globalCallsThisMinute = 0;
 const userCallsThisMinute = new Map(); // userId -> calls this minute
-// unref() so this timer alone doesn't keep the process (or a test run) alive.
-setInterval(() => {
+function resetRateLimits() {
   globalCallsThisMinute = 0;
   userCallsThisMinute.clear();
-}, 60 * 1000).unref();
+}
+// unref() so this timer alone doesn't keep the process (or a test run) alive.
+setInterval(resetRateLimits, 60 * 1000).unref();
 
 /** Takes one call from the user's and the global allowance; returns an error message if either is used up. */
 function takeRateLimitToken(userId) {
@@ -111,7 +112,42 @@ async function chatCompletion(messages, options = {}) {
 }
 
 /**
- * Central function for all Groq calls across every module.
+ * The checks every Groq call passes before it's sent: API key configured,
+ * daily quota not reached, per-user and global rate limits not hit.
+ * Takes a rate-limit token when it passes.
+ *
+ * @returns {string|null} why the call is blocked, or null if it may go ahead
+ */
+async function checkGuardrails(userId) {
+  // Fail fast (without spending quota or rate-limit tokens) if no key is set
+  if (!GROQ_API_KEY) return MISSING_KEY_ERROR;
+
+  const totalToday = await getTotalUsageToday();
+  if (totalToday >= DAILY_LIMIT) return "Daily AI quota reached. Serving cached/fallback data.";
+
+  return takeRateLimitToken(userId);
+}
+
+/**
+ * Vision (OCR) calls for resume parsing. Same guardrails as callAI(), but
+ * throws on failure, matching how the text extractor handles errors.
+ *
+ * @param {string} feature - one of UsageLog enum values, used for tracking
+ * @param {Array} messages - OpenAI-style messages with image content blocks
+ * @param {object} options - { userId }
+ * @returns {string} the extracted text
+ */
+async function callVision(feature, messages, options = {}) {
+  const blocked = await checkGuardrails(options.userId);
+  if (blocked) throw new Error(blocked);
+
+  const text = await chatCompletion(messages, { model: VISION_MODEL });
+  await incrementUsage(feature);
+  return text;
+}
+
+/**
+ * Central function for all Groq text calls across every module.
  *
  * @param {string} feature - one of UsageLog enum values, used for tracking
  * @param {string} prompt - the full prompt text
@@ -119,37 +155,15 @@ async function chatCompletion(messages, options = {}) {
  * @returns {object} { success, data, fromCache, error }
  */
 async function callAI(feature, prompt, options = {}) {
-  // 0. Fail fast (without spending quota or rate-limit tokens) if no key is set
-  if (!GROQ_API_KEY) {
-    return {
-      success: false,
-      data: options.fallbackData || null,
-      fromCache: !!options.fallbackData,
-      error: MISSING_KEY_ERROR,
-    };
-  }
+  const failure = (error) => ({
+    success: false,
+    data: options.fallbackData || null,
+    fromCache: !!options.fallbackData,
+    error,
+  });
 
-  // 1. Check daily quota before calling
-  const totalToday = await getTotalUsageToday();
-  if (totalToday >= DAILY_LIMIT) {
-    return {
-      success: false,
-      data: options.fallbackData || null,
-      fromCache: !!options.fallbackData,
-      error: "Daily AI quota reached. Serving cached/fallback data.",
-    };
-  }
-
-  // 2. Check the per-user and global per-minute rate limits
-  const rateLimitError = takeRateLimitToken(options.userId);
-  if (rateLimitError) {
-    return {
-      success: false,
-      data: options.fallbackData || null,
-      fromCache: !!options.fallbackData,
-      error: rateLimitError,
-    };
-  }
+  const blocked = await checkGuardrails(options.userId);
+  if (blocked) return failure(blocked);
 
   try {
     const messages = [];
@@ -169,12 +183,7 @@ async function callAI(feature, prompt, options = {}) {
     if (options.jsonSchemaHint) {
       // Callers that ask for JSON read fields off `data`, so unparseable output
       // is a failure, not a success with a raw string.
-      const parseFailure = {
-        success: false,
-        data: options.fallbackData || null,
-        fromCache: !!options.fallbackData,
-        error: "AI returned an invalid response. Please try again.",
-      };
+      const parseFailure = failure("AI returned an invalid response. Please try again.");
       try {
         let cleanText = text.replace(/```json|```/g, "").trim();
         const firstBrace = cleanText.indexOf('{');
@@ -200,13 +209,8 @@ async function callAI(feature, prompt, options = {}) {
     return { success: true, data, fromCache: false, error: null };
   } catch (err) {
     console.error(`[Groq:${feature}] Error:`, err.message);
-    return {
-      success: false,
-      data: options.fallbackData || null,
-      fromCache: !!options.fallbackData,
-      error: err.message,
-    };
+    return failure(err.message);
   }
 }
 
-module.exports = { TEXT_MODEL, VISION_MODEL, chatCompletion, callAI, getTodayUsage, getTotalUsageToday };
+module.exports = { TEXT_MODEL, VISION_MODEL, chatCompletion, callAI, callVision, getTodayUsage, getTotalUsageToday, resetRateLimits };

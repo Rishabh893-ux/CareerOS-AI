@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const Profile = require("../models/Profile");
@@ -56,7 +58,7 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     const resumeUrl = uploadResult.secure_url;
 
     // 2. Extract text
-    const resumeText = await extractResumeFileText(req.file);
+    const resumeText = await extractResumeFileText(req.file, req.userId);
 
     if (!resumeText || resumeText.length < 30) {
       return res.status(422).json({ error: "Could not extract readable text from the uploaded file. Please try a clearer PDF or image." });
@@ -205,7 +207,7 @@ router.delete("/", async (req, res) => {
 // services/atsAnalyzer.js). The AI is used only to pull keywords out of the
 // job description; with no JD this is a free "resume health" check.
 
-router.post("/ats-check", upload.single("resume"), async (req, res) => {
+router.post("/ats-check", upload.single("resume"), validate(schemas.atsCheck), async (req, res) => {
   try {
     const jobDescription = (req.body.jobDescription || "").trim();
     const profile = await Profile.findOne({ user: req.userId });
@@ -213,7 +215,7 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
     let resumeText;
     let source;
     if (req.file) {
-      resumeText = await extractResumeFileText(req.file);
+      resumeText = await extractResumeFileText(req.file, req.userId);
       if (!resumeText || resumeText.length < 30) {
         return res.status(422).json({ error: "Could not read text from that file. Try a text-based PDF rather than a scan." });
       }
@@ -239,6 +241,8 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
       ...analysis,
       keywordSource: keywordList?.source || null,
       resumeSource: source,
+      // Saved so the page can refill the job description box after a reload
+      jobDescription: hasJd ? jobDescription.slice(0, 10000) : "",
       checkedAt: new Date(),
     };
 
@@ -255,7 +259,7 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
 });
 
 // ── POST /api/resume/enhance-bullet ──
-router.post("/enhance-bullet", async (req, res) => {
+router.post("/enhance-bullet", validate(schemas.enhanceBullet), async (req, res) => {
   try {
     const { text, type } = req.body;
     if (!text) return res.status(400).json({ error: "Text is required" });
@@ -290,7 +294,7 @@ Original Text:
 });
 
 // ── POST /api/resume/cover-letter ──
-router.post("/cover-letter", async (req, res) => {
+router.post("/cover-letter", validate(schemas.coverLetter), async (req, res) => {
   try {
     const { companyName, roleTitle, jobDescription, tone } = req.body;
     if (!companyName || !roleTitle) {

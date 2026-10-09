@@ -35,6 +35,8 @@ export interface AtsResult {
   suggestions: string[];
   keywordSource?: "ai" | "fallback" | null;
   resumeSource?: "upload" | "profile-resume" | "profile-fields";
+  /** The job description this check ran against; empty for health checks */
+  jobDescription?: string;
   checkedAt?: string;
   rawExtractedText?: string;
 }

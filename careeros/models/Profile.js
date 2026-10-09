@@ -79,6 +79,7 @@ const profileSchema = new mongoose.Schema(
       suggestions: [String],
       keywordSource: String,
       resumeSource: String,
+      jobDescription: String, // the pasted JD this check ran against ("" for health checks)
       checkedAt: Date,
     },
     githubAnalysis: {

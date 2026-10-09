@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [eduBranch, setEduBranch] = useState("");
   const [eduCgpa, setEduCgpa] = useState("");
   const [eduYear, setEduYear] = useState("");
+  const [experienceList, setExperienceList] = useState<NonNullable<Profile["experience"]>>([]);
+  const [certificationsList, setCertificationsList] = useState<NonNullable<Profile["certifications"]>>([]);
   const [projectsList, setProjectsList] = useState<Profile["projects"]>([]);
   const [newProjTitle, setNewProjTitle] = useState("");
   const [newProjDesc, setNewProjDesc] = useState("");
@@ -55,6 +57,8 @@ export default function Dashboard() {
       // Edit the merged list so resume-extracted skills are visible and editable too.
       setSkillsText(mergeSkills(data).join(", "));
       setProjectsList(data.projects || []);
+      setExperienceList(data.experience || []);
+      setCertificationsList(data.certifications || []);
       fetchWithAuth("/auth/me").then(me => {
         setUserName(me.name || "");
         if (me.githubUsername) setGithubUsername(me.githubUsername);
@@ -94,7 +98,7 @@ export default function Dashboard() {
     try {
       const updatedProfile = await fetchWithAuth("/profile", {
         method: "PUT",
-        body: JSON.stringify({ careerGoal: careerGoal.trim(), skills, resumeExtractedSkills, education, projects: projectsList }),
+        body: JSON.stringify({ careerGoal: careerGoal.trim(), skills, resumeExtractedSkills, education, experience: experienceList, certifications: certificationsList, projects: projectsList }),
       });
       if (githubUsername) {
         await fetchWithAuth("/auth/settings", {
@@ -176,6 +180,8 @@ export default function Dashboard() {
       setCareerGoal(profile.careerGoal || "");
       setSkillsText(mergeSkills(profile).join(", "));
       setProjectsList(profile.projects || []);
+      setExperienceList(profile.experience || []);
+      setCertificationsList(profile.certifications || []);
       setNewProjTitle(""); setNewProjDesc(""); setNewProjStack(""); setNewProjRepo("");
       setEduInstitute(profile.education?.[0]?.institute || "");
       setEduDegree(profile.education?.[0]?.degree || "");
@@ -238,6 +244,10 @@ export default function Dashboard() {
           setEduCgpa={setEduCgpa}
           eduYear={eduYear}
           setEduYear={setEduYear}
+          experienceList={experienceList}
+          setExperienceList={setExperienceList}
+          certificationsList={certificationsList}
+          setCertificationsList={setCertificationsList}
           projectsList={projectsList}
           newProjTitle={newProjTitle}
           setNewProjTitle={setNewProjTitle}

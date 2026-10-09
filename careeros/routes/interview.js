@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const InterviewSession = require("../models/InterviewSession");
 const authMiddleware = require("../middleware/auth");
 const { callAI } = require("../services/aiService");
@@ -7,7 +9,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Generate a set of questions (HR or Technical) and save as a new session
-router.post("/generate", async (req, res) => {
+router.post("/generate", validate(schemas.interviewGenerate), async (req, res) => {
   try {
     const { type, topic, format = "Written", limit = 5 } = req.body; // type: "HR" | "Technical", format: "Written" | "MCQ", limit: 5 | 10 | 20
     if (!type || !["HR", "Technical"].includes(type)) {
@@ -75,7 +77,7 @@ Note: correctAnswer must be a single letter ("A", "B", "C", or "D") correspondin
 });
 
 // Submit answers to a session for feedback (mock interview evaluation)
-router.post("/:id/feedback", async (req, res) => {
+router.post("/:id/feedback", validate(schemas.interviewFeedback), async (req, res) => {
   try {
     const { answers } = req.body; // array of strings (user answers)
     if (!Array.isArray(answers) || answers.length === 0) {

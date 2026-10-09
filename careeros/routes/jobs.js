@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const JobApplication = require("../models/JobApplication");
 const authMiddleware = require("../middleware/auth");
 const { analyzeJobMatch } = require("../services/jobMatchService");
@@ -26,7 +28,7 @@ function formatSalary(min, max, country) {
 // Live job search (Adzuna) - MUST be before /:id routes.
 // Responds { results, source }: source "sample" means placeholder listings,
 // which the UI labels clearly so they're never mistaken for real openings.
-router.get("/search", async (req, res) => {
+router.get("/search", validate(schemas.jobSearch, "query"), async (req, res) => {
   let what = req.query.what || "";
   let where = req.query.where || "";
   const country = req.query.country || "in"; // default to India
@@ -72,7 +74,7 @@ router.get("/search", async (req, res) => {
 });
 
 // Track a new job application
-router.post("/", async (req, res) => {
+router.post("/", validate(schemas.jobCreate), async (req, res) => {
   try {
     const { company, role, jobUrl, notes, jobDescription } = req.body;
     const status = STATUSES.includes(req.body.status) ? req.body.status : "Wishlist";
@@ -105,7 +107,7 @@ router.post("/", async (req, res) => {
 // Update a job (status, notes, dates, description, ...)
 const JOB_UPDATABLE_FIELDS = ["company", "role", "jobUrl", "status", "notes", "appliedOn", "jobDescription"];
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", validate(schemas.jobUpdate), async (req, res) => {
   try {
     const job = await JobApplication.findOne({ _id: req.params.id, user: req.userId });
     if (!job) return res.status(404).json({ error: "Job not found" });

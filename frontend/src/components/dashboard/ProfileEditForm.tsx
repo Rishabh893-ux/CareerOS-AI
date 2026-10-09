@@ -1,5 +1,6 @@
 import { Sparkles, Target, Zap, GitBranch, GraduationCap, Code, Trash2, Plus } from "lucide-react";
 import type { Profile } from "@/types/dashboard";
+import { ExperienceEditor, CertificationsEditor } from "./ProfileListEditors";
 
 const FIELD_LABEL = "block text-xs font-semibold text-muted mb-1.5";
 const FIELD = "w-full bg-surface-alt border border-line rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted";
@@ -23,6 +24,10 @@ interface ProfileEditFormProps {
   setEduCgpa: (value: string) => void;
   eduYear: string;
   setEduYear: (value: string) => void;
+  experienceList: NonNullable<Profile["experience"]>;
+  setExperienceList: (items: NonNullable<Profile["experience"]>) => void;
+  certificationsList: NonNullable<Profile["certifications"]>;
+  setCertificationsList: (items: NonNullable<Profile["certifications"]>) => void;
   projectsList: Profile["projects"];
   newProjTitle: string;
   setNewProjTitle: (value: string) => void;
@@ -57,6 +62,10 @@ export function ProfileEditForm({
   setEduCgpa,
   eduYear,
   setEduYear,
+  experienceList,
+  setExperienceList,
+  certificationsList,
+  setCertificationsList,
   projectsList,
   newProjTitle,
   setNewProjTitle,
@@ -184,6 +193,10 @@ export function ProfileEditForm({
             </div>
           </div>
         </div>
+
+        <ExperienceEditor items={experienceList} onChange={setExperienceList} />
+
+        <CertificationsEditor items={certificationsList} onChange={setCertificationsList} />
 
         {/* Projects */}
         <div className="space-y-4 border-t border-line pt-6">
