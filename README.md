@@ -238,7 +238,7 @@ Image uploads go straight to Groq Vision. Only one `pdfjs-dist` version is loade
 - Node.js **20 or later** and npm
 - A MongoDB connection string (a free Atlas M0 cluster works)
 - A [Groq API key](https://console.groq.com/keys)
-- Optional: a GitHub token (raises the rate limit), Cloudinary (resume uploads), Adzuna (live job search) and an SMTP account (password-reset emails)
+- Optional: a GitHub token (raises the rate limit), Cloudinary (resume uploads), Adzuna (live job search) and a Brevo or Gmail account (password-reset emails)
 
 ### 1. Backend (`/careeros`)
 ```bash
@@ -260,7 +260,8 @@ npm run dev             # http://localhost:5001
 | `GITHUB_TOKEN` | No | Raises GitHub's rate limit from 60 to 5,000 requests an hour |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For uploads | Resume file storage |
 | `ADZUNA_APP_ID`, `ADZUNA_API_KEY` | No | Live job search; without them, search shows labelled sample listings |
-| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails. Without them, the reset link is shown on screen and logged only when `NODE_ENV=development`; anywhere else no link is given out, so set these in production if you want password resets to work |
+| `BREVO_API_KEY`, `EMAIL_FROM` | No | Sends password-reset emails through [Brevo](https://www.brevo.com)'s HTTPS API (free, 300 a day). Use this on hosts that block SMTP ports, such as Render's free plan. `EMAIL_FROM` must be a sender verified in Brevo |
+| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails through Gmail SMTP (use a Gmail App Password); used when `BREVO_API_KEY` isn't set. With no email provider, the reset link is shown on screen and logged only when `NODE_ENV=development`; anywhere else no link is given out |
 | `AI_DAILY_LIMIT`, `AI_CACHE_TTL_HOURS` | No | Quota guardrails (defaults `1400` and `24`) |
 | `AI_USER_RATE_LIMIT`, `AI_GLOBAL_RATE_LIMIT` | No | AI calls allowed per minute for each user and for everyone combined (defaults `10` and `30`) |
 
@@ -306,7 +307,7 @@ careeros/                 Express API
 ├── middleware/           auth (JWT), validate (zod) and rate limits
 ├── validation/           request schemas for every route that takes input
 ├── services/             aiService, atsAnalyzer, githubScoring, githubService, jobKeywords,
-│                         jobMatchService, resumeTextExtractor, profileUtils, cacheUtils, demoAccount
+│                         jobMatchService, resumeTextExtractor, profileUtils, cacheUtils, demoAccount, mailer
 ├── models/               User, Profile, JobApplication, InterviewSession, UsageLog
 └── test/                 node:test suites
 

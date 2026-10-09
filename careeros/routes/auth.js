@@ -3,7 +3,7 @@ const validate = require("../middleware/validate");
 const schemas = require("../validation/schemas");
 const rateLimits = require("../middleware/rateLimits");
 const { getFreshDemoUser } = require("../services/demoAccount");
-const { sendMail } = require("../services/mailer");
+const { sendMail, isEmailConfigured } = require("../services/mailer");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -148,14 +148,14 @@ router.post("/forgot-password", rateLimits.passwordReset, validate(schemas.forgo
     const frontendUrl = process.env.FRONTEND_URL || "https://careeros-ai-phi.vercel.app";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+    if (!isEmailConfigured()) {
       // Without email, only local development may see the link. Anywhere else,
       // handing it back would let anyone reset anyone's password.
       if (process.env.NODE_ENV === "development") {
         console.log(`[Email] Password reset link for ${email}: ${resetUrl}`);
         return res.json({ message: `Development mode: no email server configured. Your reset link is: ${resetUrl}` });
       }
-      console.error("[Email] SMTP_EMAIL / SMTP_PASSWORD not set; password reset email was not sent.");
+      console.error("[Email] No email provider set (BREVO_API_KEY, or SMTP_EMAIL and SMTP_PASSWORD); password reset email was not sent.");
       return res.json({ message: RESET_REQUESTED });
     }
 
