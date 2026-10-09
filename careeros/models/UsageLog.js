@@ -13,6 +13,7 @@ const usageLogSchema = new mongoose.Schema({
       "ai_copilot",
       "job_match",
       "resume_parse",
+      "resume_ocr",
       "ats_check",
       "skill_gap",
       "roadmap",

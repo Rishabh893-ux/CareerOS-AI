@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const Profile = require("../models/Profile");
 const User = require("../models/User");
 const authMiddleware = require("../middleware/auth");
@@ -50,7 +52,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.put("/", async (req, res) => {
+router.put("/", validate(schemas.profileUpdate), async (req, res) => {
   try {
     const allowedFields = ["education", "skills", "resumeExtractedSkills", "projects", "careerGoal", "experience", "certifications", "phone", "location", "portfolioUrl"];
     const updates = {};

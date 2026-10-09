@@ -39,7 +39,11 @@ export default function ResumePage() {
       const data = await fetchWithAuth("/profile");
       setProfile(data);
       // Show the last saved check until a new one is run
-      if (data.lastAtsCheck?.checks) setAtsResult((prev) => prev ?? data.lastAtsCheck);
+      if (data.lastAtsCheck?.checks) {
+        setAtsResult((prev) => prev ?? data.lastAtsCheck);
+        // Refill the job description it was checked against, unless one is already typed
+        if (data.lastAtsCheck.jobDescription) setJobDescription((prev) => prev || data.lastAtsCheck.jobDescription);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Failed to load profile.");

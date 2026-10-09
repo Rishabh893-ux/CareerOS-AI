@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const authMiddleware = require("../middleware/auth");
 const { callAI } = require("../services/aiService");
 const { isStale } = require("../services/cacheUtils");
@@ -8,7 +10,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // --- Skill Gap Analysis ---
-router.post("/skill-gap", async (req, res) => {
+router.post("/skill-gap", validate(schemas.targetRole), async (req, res) => {
   try {
     const { targetRole } = req.body;
     if (!targetRole) return res.status(400).json({ error: "targetRole is required" });
@@ -61,7 +63,7 @@ Return ONLY JSON: { "missingSkills": ["skill1", "skill2", ...] } (max 10 items)`
 });
 
 // --- Roadmap Generator (builds on skill gap if already computed) ---
-router.post("/roadmap", async (req, res) => {
+router.post("/roadmap", validate(schemas.targetRole), async (req, res) => {
   try {
     const { targetRole } = req.body;
     if (!targetRole) return res.status(400).json({ error: "targetRole is required" });
@@ -118,7 +120,7 @@ Return ONLY JSON in this shape, max 6 steps, ordered by priority:
 });
 
 // --- Career Path Ladder (title progression toward the target role) ---
-router.post("/career-path", async (req, res) => {
+router.post("/career-path", validate(schemas.targetRole), async (req, res) => {
   try {
     const { targetRole } = req.body;
     if (!targetRole) return res.status(400).json({ error: "targetRole is required" });

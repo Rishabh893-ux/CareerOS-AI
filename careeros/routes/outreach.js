@@ -1,11 +1,13 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const authMiddleware = require("../middleware/auth");
 const Profile = require("../models/Profile");
 const { callAI } = require("../services/aiService");
 
 const router = express.Router();
 
-router.post("/generate", authMiddleware, async (req, res) => {
+router.post("/generate", authMiddleware, validate(schemas.outreachGenerate), async (req, res) => {
   try {
     const { recipientName, companyName, targetRole, platform, context } = req.body;
     
@@ -56,7 +58,7 @@ Return ONLY the raw message text (and subject line if Email). Do not wrap it in 
   }
 });
 
-router.post("/research", authMiddleware, async (req, res) => {
+router.post("/research", authMiddleware, validate(schemas.outreachResearch), async (req, res) => {
   try {
     const { companyName, targetRole } = req.body;
     if (!companyName) {

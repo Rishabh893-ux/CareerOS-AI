@@ -54,7 +54,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 - **Career score (0–100):** readiness from a fixed, explainable weighting across skills, projects and GitHub activity.
 - **Profile completeness:** a progress bar that names what to add next ("Add GitHub to sharpen your career score").
 - **Growth roadmap and skill gap:** enter a target role to get the missing skills, a step-by-step learning plan and a career-path ladder with realistic year ranges.
-- **Profile editor:** labelled forms for goal, skills (including those pulled from your resume), education and projects.
+- **Profile editor:** labelled forms for goal, skills (including those pulled from your resume), education, experience, certifications and projects.
 
 ### GitHub analyzer
 - **Measured score:** built from five signals (documentation, activity, showcase, community, breadth), each with the detail behind it, such as "5/6 recent repos have a README".
@@ -64,7 +64,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 
 ### Resume and ATS
 - **Resume parser:** PDF or image upload with three-tier text extraction (`pdf-parse` → `pdfjs-dist` text layer → Groq Vision OCR), so scanned resumes work too.
-- **ATS match:** paste a job description and the AI extracts its required and nice-to-have keywords. Each one is then checked against your **full** resume text, with aliases (`k8s` → Kubernetes, `RESTful` → REST API) and guards against false matches ("next steps" isn't Next.js).
+- **ATS match:** paste a job description and the AI extracts its required and nice-to-have keywords. The description is saved with the result, so it's still there when you come back. Each one is then checked against your **full** resume text, with aliases (`k8s` → Kubernetes, `RESTful` → REST API) and guards against false matches ("next steps" isn't Next.js).
 - **Resume health:** with no job description, ten format checks run with no AI call: contact details, standard section headings, length, bullets with numbers and bullets that start with action verbs.
 - **What an ATS actually sees:** the raw extracted text, so you can spot columns or icons that break parsing.
 - **Resume builder and cover letters:** two ATS-friendly templates that auto-fit to one page, plus a cover letter generator grounded only in your real experience.
@@ -190,7 +190,8 @@ flowchart LR
     AI --> Groq
 ```
 
-- **Every AI call goes through one service** (`aiService.js`), where the rate limiting, daily quota and cache fallback live.
+- **Every AI call goes through one service** (`aiService.js`), where the rate limiting, daily quota and cache fallback live. That includes the vision OCR for scanned resumes.
+- **Every route that takes input validates it first** with [zod](https://zod.dev/) (`validation/schemas.js`). Bad input gets a clear 400, unknown fields are dropped, and values can't smuggle Mongo query operators into a filter.
 - **Scoring is pure and tested:** `atsAnalyzer.js` and `githubScoring.js` take data in and return scores, with no I/O. That's what makes them repeatable and easy to test.
 - **Resume files live in Cloudinary;** only the URL and the extracted text are stored in MongoDB.
 
@@ -257,6 +258,7 @@ npm run dev             # http://localhost:5001
 | `ADZUNA_APP_ID`, `ADZUNA_API_KEY` | No | Live job search; without them, search shows labelled sample listings |
 | `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails; without them, the reset link is logged to the console |
 | `AI_DAILY_LIMIT`, `AI_CACHE_TTL_HOURS` | No | Quota guardrails (defaults `1400` and `24`) |
+| `AI_USER_RATE_LIMIT`, `AI_GLOBAL_RATE_LIMIT` | No | AI calls allowed per minute for each user and for everyone combined (defaults `10` and `30`) |
 
 ### 2. Frontend (`/frontend`)
 ```bash
@@ -284,6 +286,8 @@ The backend tests stub the database models and run each route on a random port, 
 - **GitHub scoring:** repeatability, and recommendations that name the right repos
 - **ATS analyzer:** aliases, false-positive guards, full-text matching and format checks
 - **Job tracker routes:** duplicate tracking, applied dates, re-matching and salary formatting
+- **AI service:** per-user and global rate limits, the daily quota, invalid JSON replies and a missing API key
+- **Request validation:** operator injection, stripped fields, partial updates and the routes' error messages
 
 CI runs all of the above on every push and pull request to `main`.
 
@@ -294,6 +298,8 @@ CI runs all of the above on every push and pull request to `main`.
 ```
 careeros/                 Express API
 ├── routes/               auth, profile, resume, github, career, growth, interview, jobs, outreach, copilot
+├── middleware/           auth (JWT) and validate (zod)
+├── validation/           request schemas for every route that takes input
 ├── services/             aiService, atsAnalyzer, githubScoring, githubService, jobKeywords,
 │                         jobMatchService, resumeTextExtractor, profileUtils, cacheUtils
 ├── models/               User, Profile, JobApplication, InterviewSession, UsageLog
@@ -323,7 +329,7 @@ frontend/src/             Next.js app
 
 To stay within a free-tier Groq key:
 1. **Daily quota** (`UsageLog` collection): calls stop once `AI_DAILY_LIMIT` is reached, and cached or fallback data is served instead of an error.
-2. **Rate limiting:** an in-memory token bucket allows at most 10 calls a minute.
+2. **Rate limiting:** in-memory limits allow each user 10 calls a minute, and everyone combined 30, so one busy user can't lock others out. Both are counted per server process.
 3. **Caching:** the GitHub analysis and career score are cached on the profile for `AI_CACHE_TTL_HOURS` (default 24h), unless you refresh.
 4. **No AI where it isn't needed:** resume health checks, all score calculations and MCQ grading run in code.
 
@@ -343,10 +349,11 @@ To stay within a free-tier Groq key:
 
 ## Roadmap
 
-- [ ] Edit experience and certifications directly in the profile editor
-- [ ] Request validation (e.g. `zod`) on every route
+- [x] Edit experience and certifications directly in the profile editor
+- [x] Request validation (`zod`) on every route that takes input
 - [ ] Frontend component tests
-- [ ] Remember the pasted job description alongside the saved ATS result
+- [x] Remember the pasted job description alongside the saved ATS result
+- [ ] Share rate limits across server instances (e.g. Redis)
 
 ---
 

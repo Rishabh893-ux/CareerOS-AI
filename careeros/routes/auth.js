@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -12,7 +14,7 @@ const router = express.Router();
 // User.email is stored lowercased and trimmed, so lookups must match that.
 const normalizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "");
 
-router.post("/register", async (req, res) => {
+router.post("/register", validate(schemas.register), async (req, res) => {
   try {
     const { name, password } = req.body;
     const email = normalizeEmail(req.body.email);
@@ -47,7 +49,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", validate(schemas.login), async (req, res) => {
   try {
     const { password } = req.body;
     const email = normalizeEmail(req.body.email);
@@ -271,7 +273,7 @@ router.get("/me", authMiddleware, async (req, res) => {
   }
 });
 
-router.put("/settings", authMiddleware, async (req, res) => {
+router.put("/settings", authMiddleware, validate(schemas.settings), async (req, res) => {
   try {
     // Partial update: only fields present in the body change, so callers can
     // send just { githubUsername } without touching name or username.
@@ -302,7 +304,7 @@ router.put("/settings", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", validate(schemas.forgotPassword), async (req, res) => {
   try {
     const email = normalizeEmail(req.body.email);
     const user = await User.findOne({ email });
@@ -350,7 +352,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", validate(schemas.resetPassword), async (req, res) => {
   try {
     const { token, password } = req.body;
     
