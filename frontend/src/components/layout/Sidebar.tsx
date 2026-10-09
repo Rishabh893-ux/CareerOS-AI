@@ -11,7 +11,7 @@ import {
   ExternalLink,
   X,
 } from "lucide-react";
-import type { NavItem } from "@/types/layout";
+import type { NavItem } from "@/components/layout/types";
 
 interface SidebarProps {
   sidebarOpen: boolean;

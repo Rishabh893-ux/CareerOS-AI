@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { ResumeData, TemplateId } from "@/components/resume/templates";
-import { Toolbar } from "@/components/resume-builder/Toolbar";
-import { EditorSidebar } from "@/components/resume-builder/EditorSidebar";
-import { PreviewPane } from "@/components/resume-builder/PreviewPane";
-import type { EnhancingState, ResumeBuilderTab } from "@/types/resume-builder";
+import { ResumeData, TemplateId } from "@/features/resume-builder/templates";
+import { Toolbar } from "@/features/resume-builder/components/Toolbar";
+import { EditorSidebar } from "@/features/resume-builder/components/EditorSidebar";
+import { PreviewPane } from "@/features/resume-builder/components/PreviewPane";
+import type { EnhancingState, ResumeBuilderTab } from "@/features/resume-builder/types";
 import { mergeSkills } from "@/lib/skills";
 
 export default function ResumeBuilder() {

@@ -308,11 +308,21 @@ careeros/                 Express API
 └── test/                 node:test suites
 
 frontend/src/             Next.js app
-├── app/                  routes: dashboard, resume (+ builder), interview, outreach, jobs, p/[username], auth pages
-├── components/           feature folders (dashboard, resume, jobs, interview, portfolio, layout)
-├── lib/                  api client, theme, dialog, skills and project-repo helpers
-└── types/                shared TypeScript types
+├── app/                  routes only: dashboard, resume (+ builder), interview, outreach, jobs, p/[username], auth pages
+├── features/             one folder per feature, each with its own components/ and types.ts
+│   ├── dashboard/        score, insights, skills, GitHub, roadmap cards and the profile editor
+│   ├── resume/           resume parser, ATS check and report, cover letter
+│   ├── resume-builder/   editor tabs, live preview and the one-page templates
+│   ├── jobs/             Kanban tracker, job search and modals
+│   ├── interview/        mock interview setup, questions, results and journal
+│   ├── outreach/         company research brief
+│   └── portfolio/        public portfolio sections
+├── components/layout/    app shell shared by every page: sidebar, header, Copilot drawer, settings
+├── hooks/                shared React hooks (theme, modal dialog)
+└── lib/                  shared helpers: API client, skills, project-to-repo linking
 ```
+
+A page in `app/` imports from its feature folder; features don't import from each other, and anything two features need lives in `components/`, `hooks/` or `lib/`.
 
 ---
 

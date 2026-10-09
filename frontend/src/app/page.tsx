@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import type { Profile } from "@/types/dashboard";
-import { HeroCard } from "@/components/dashboard/HeroCard";
-import { CareerScoreCard } from "@/components/dashboard/CareerScoreCard";
-import { AiInsightsCard } from "@/components/dashboard/AiInsightsCard";
-import { SkillsPanel } from "@/components/dashboard/SkillsPanel";
-import { GithubProfilerCard } from "@/components/dashboard/GithubProfilerCard";
-import { GithubRepositoriesCard } from "@/components/dashboard/GithubRepositoriesCard";
-import { GrowthRoadmapCard } from "@/components/dashboard/GrowthRoadmapCard";
-import { ProjectsPanel } from "@/components/dashboard/ProjectsPanel";
-import { ProfileEditForm } from "@/components/dashboard/ProfileEditForm";
+import type { Profile } from "@/features/dashboard/types";
+import { HeroCard } from "@/features/dashboard/components/HeroCard";
+import { CareerScoreCard } from "@/features/dashboard/components/CareerScoreCard";
+import { AiInsightsCard } from "@/features/dashboard/components/AiInsightsCard";
+import { SkillsPanel } from "@/features/dashboard/components/SkillsPanel";
+import { GithubProfilerCard } from "@/features/dashboard/components/GithubProfilerCard";
+import { GithubRepositoriesCard } from "@/features/dashboard/components/GithubRepositoriesCard";
+import { GrowthRoadmapCard } from "@/features/dashboard/components/GrowthRoadmapCard";
+import { ProjectsPanel } from "@/features/dashboard/components/ProjectsPanel";
+import { ProfileEditForm } from "@/features/dashboard/components/ProfileEditForm";
 import { mergeSkills } from "@/lib/skills";
 import { linkProjectsToRepos } from "@/lib/projectRepos";
 
