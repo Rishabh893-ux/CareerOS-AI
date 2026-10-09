@@ -21,6 +21,8 @@ export interface Job {
   /** Legacy AI prose from before keyword matching; shown only if present */
   strengths?: string[];
   weaknesses?: string[];
+  /** When a resume tailored for this job was last saved from the resume builder */
+  tailoredAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
