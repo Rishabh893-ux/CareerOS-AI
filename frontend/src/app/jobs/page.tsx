@@ -42,7 +42,10 @@ export default function JobsPage() {
     }
   }, []);
 
-  useEffect(() => { loadJobs(); }, [loadJobs]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadJobs();
+  }, [loadJobs]);
 
   // Matches run in the background; poll while any are pending
   const hasPending = jobs.some((j) => j.matchStatus === "pending");

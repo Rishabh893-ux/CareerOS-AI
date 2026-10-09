@@ -39,9 +39,9 @@ export default function SettingsModal({ isOpen, onClose, onUpdate }: SettingsMod
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadUserData();
     }
   }, [isOpen]);

@@ -26,12 +26,12 @@ export function CompanyResearchCard({ companyName, targetRole }: CompanyResearch
   const [error, setError] = useState("");
 
   // Keep in sync if the user fills the form above first (only while this card is still untouched/empty)
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (companyName && !localCompanyName) setLocalCompanyName(companyName);
   }, [companyName, localCompanyName]);
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (targetRole && !localTargetRole) setLocalTargetRole(targetRole);
   }, [targetRole, localTargetRole]);
 
