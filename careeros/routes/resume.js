@@ -125,7 +125,6 @@ Resume text:
 """${resumeText.slice(0, 8000)}"""`;
 
     const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true, userId: req.userId });
-    console.log("[Resume Parse] Claude Success:", result.success, "Data:", result.data);
     
     let extractedSkills = [];
     let profile = null;

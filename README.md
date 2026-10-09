@@ -252,11 +252,12 @@ npm run dev             # http://localhost:5001
 | `JWT_SECRET` | Yes | Long random string for signing sessions |
 | `GROQ_API_KEY` | Yes | AI features |
 | `PORT` | No | Defaults to `5001` |
+| `NODE_ENV` | No | Set to `development` only on your own machine. Never use `development` on a deployed server: it shows password-reset links in the API response |
 | `FRONTEND_URL` | No | Used in password-reset links (default setup: `http://localhost:3000`) |
 | `GITHUB_TOKEN` | No | Raises GitHub's rate limit from 60 to 5,000 requests an hour |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For uploads | Resume file storage |
 | `ADZUNA_APP_ID`, `ADZUNA_API_KEY` | No | Live job search; without them, search shows labelled sample listings |
-| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails; without them, the reset link is logged to the console |
+| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails. Without them, the reset link is shown on screen and logged only when `NODE_ENV=development`; anywhere else no link is given out, so set these in production if you want password resets to work |
 | `AI_DAILY_LIMIT`, `AI_CACHE_TTL_HOURS` | No | Quota guardrails (defaults `1400` and `24`) |
 | `AI_USER_RATE_LIMIT`, `AI_GLOBAL_RATE_LIMIT` | No | AI calls allowed per minute for each user and for everyone combined (defaults `10` and `30`) |
 
@@ -282,7 +283,7 @@ cd frontend && npm run lint && npx tsc --noEmit && npm run build
 ```
 
 The backend tests stub the database models and run each route on a random port, so they need no MongoDB or network access. They cover:
-- **Auth:** email case handling, deleted accounts and partial settings updates
+- **Auth:** email case handling, deleted accounts, partial settings updates, and password resets that never reveal whether an account exists or hand out the link outside development
 - **GitHub scoring:** repeatability, and recommendations that name the right repos
 - **ATS analyzer:** aliases, false-positive guards, full-text matching and format checks
 - **Job tracker routes:** duplicate tracking, applied dates, re-matching and salary formatting
