@@ -217,3 +217,23 @@ test("forgot-password returns the link in local development when no email server
   const { body } = await forgotPassword("ada@example.com", "development");
   assert.ok(body.message.includes(user.resetPasswordToken));
 });
+
+test("a failed reset email shows a plain message, never the network or SMTP error", async () => {
+  const dns = require("dns");
+  const saved = { email: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD, lookup: dns.promises.lookup };
+  process.env.SMTP_EMAIL = "app@example.com";
+  process.env.SMTP_PASSWORD = "app-password";
+  dns.promises.lookup = async () => { throw Object.assign(new Error("connect ENETUNREACH 2404:6800::6d:465"), { code: "ENETUNREACH" }); };
+  seedResettableUser("ada@example.com");
+  try {
+    const { status, body } = await forgotPassword("ada@example.com", "production");
+    assert.equal(status, 503);
+    assert.match(body.error, /couldn't send the reset email/);
+    assert.ok(!JSON.stringify(body).includes("ENETUNREACH"));
+  } finally {
+    dns.promises.lookup = saved.lookup;
+    for (const [key, value] of [["SMTP_EMAIL", saved.email], ["SMTP_PASSWORD", saved.pass]]) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+});

@@ -3,10 +3,10 @@ const validate = require("../middleware/validate");
 const schemas = require("../validation/schemas");
 const rateLimits = require("../middleware/rateLimits");
 const { getFreshDemoUser } = require("../services/demoAccount");
+const { sendMail } = require("../services/mailer");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const Profile = require("../models/Profile");
 
@@ -159,28 +159,24 @@ router.post("/forgot-password", rateLimits.passwordReset, validate(schemas.forgo
       return res.json({ message: RESET_REQUESTED });
     }
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.SMTP_EMAIL,
-      to: user.email,
-      subject: "CareerOS AI Password Reset",
-      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+    try {
+      await sendMail({
+        to: user.email,
+        subject: "CareerOS AI Password Reset",
+        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
         Please click on the following link, or paste this into your browser to complete the process:\n\n
         ${resetUrl}\n\n
         If you did not request this, please ignore this email and your password will remain unchanged.\n`,
-    };
-
-    await transporter.sendMail(mailOptions);
+      });
+    } catch (mailErr) {
+      // Network and SMTP details stay in the server log, not on the user's screen
+      console.error("[Email] Password reset email failed:", mailErr.code || "", mailErr.message);
+      return res.status(503).json({ error: "We couldn't send the reset email right now. Please try again in a few minutes." });
+    }
     res.json({ message: RESET_REQUESTED });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("[Auth] forgot-password failed:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
