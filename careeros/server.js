@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/auth");
@@ -15,6 +16,16 @@ const interviewRoutes = require("./routes/interview");
 const outreachRoutes = require("./routes/outreach");
 
 const app = express();
+
+// ── Proxy + security headers ──
+// Hosts like Render and Railway sit behind one reverse proxy; trusting that
+// hop gives rate limiting the visitor's real IP instead of the proxy's (which
+// would make every visitor share one limit). Set TRUST_PROXY=0 if the server
+// is exposed directly, or a higher number for more proxy hops.
+app.set("trust proxy", parseInt(process.env.TRUST_PROXY ?? "1", 10));
+// The API only serves JSON to the frontend, so helmet's defaults fit; resume
+// files are served by Cloudinary, not here.
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 // ── CORS ──
 // Trim whitespace/trailing slashes from every origin (including FRONTEND_URL)

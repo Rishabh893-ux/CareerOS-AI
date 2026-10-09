@@ -119,20 +119,6 @@ const profileSchema = new mongoose.Schema(
       computedAt: Date,
     },
 
-    // LinkedIn has no scrapeable free API - user pastes their own text instead
-    linkedinManualInput: {
-      headline: String,
-      about: String,
-      skillsListed: [String],
-    },
-    linkedinAnalysis: {
-      score: Number,
-      headlineFeedback: String,
-      aboutFeedback: String,
-      suggestedHeadline: String,
-      computedAt: Date,
-    },
-
     skillGap: {
       targetRole: String,
       missingSkills: [String],

@@ -28,7 +28,6 @@ router.post("/ask", validate(schemas.copilotAsk), async (req, res) => {
         ? { score: profile.careerScore.score, weaknesses: profile.careerScore.weaknesses }
         : "not yet computed - tell user to run /career/score first",
       githubScore: profile?.githubAnalysis?.score ?? "not yet computed",
-      linkedinScore: profile?.linkedinAnalysis?.score ?? "not yet computed",
       skillGap: profile?.skillGap?.missingSkills ?? "not yet computed - tell user to run /growth/skill-gap",
       roadmap: profile?.roadmap?.steps?.map((s) => s.title) ?? "not yet computed",
       applications: jobs,
