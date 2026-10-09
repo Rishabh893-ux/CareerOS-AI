@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { AlertCircle, CheckCircle, X } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import { Job, JobStatus, SearchResponse } from "@/types/jobs";
-import SearchPanel from "@/components/jobs/SearchPanel";
-import SearchResultsPanel from "@/components/jobs/SearchResultsPanel";
-import KanbanBoard from "@/components/jobs/KanbanBoard";
-import PipelineSummary from "@/components/jobs/PipelineSummary";
-import AddJobModal from "@/components/jobs/AddJobModal";
-import JobDetailModal from "@/components/jobs/JobDetailModal";
+import { Job, JobStatus, SearchResponse } from "@/features/jobs/types";
+import SearchPanel from "@/features/jobs/components/SearchPanel";
+import SearchResultsPanel from "@/features/jobs/components/SearchResultsPanel";
+import KanbanBoard from "@/features/jobs/components/KanbanBoard";
+import PipelineSummary from "@/features/jobs/components/PipelineSummary";
+import AddJobModal from "@/features/jobs/components/AddJobModal";
+import JobDetailModal from "@/features/jobs/components/JobDetailModal";
 
 const POLL_MS = 4000;
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { Bot, Send, X, Zap } from "lucide-react";
-import type { ChatMessage } from "@/types/layout";
+import type { ChatMessage } from "@/components/layout/types";
 
 interface CopilotDrawerProps {
   isOpen: boolean;

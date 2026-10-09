@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import { Profile, AtsResult, ACCEPTED_TYPES } from "@/types/resume";
-import { ResumeParserCard } from "@/components/resume/ResumeParserCard";
-import { ResumeBuilderCard } from "@/components/resume/ResumeBuilderCard";
-import { AtsCheckerForm } from "@/components/resume/AtsCheckerForm";
-import { DiagnosticReport } from "@/components/resume/DiagnosticReport";
-import { CoverLetterCard } from "@/components/resume/CoverLetterCard";
+import { Profile, AtsResult, ACCEPTED_TYPES } from "@/features/resume/types";
+import { ResumeParserCard } from "@/features/resume/components/ResumeParserCard";
+import { ResumeBuilderCard } from "@/features/resume/components/ResumeBuilderCard";
+import { AtsCheckerForm } from "@/features/resume/components/AtsCheckerForm";
+import { DiagnosticReport } from "@/features/resume/components/DiagnosticReport";
+import { CoverLetterCard } from "@/features/resume/components/CoverLetterCard";
 import { mergeSkills } from "@/lib/skills";
 
 export default function ResumePage() {
