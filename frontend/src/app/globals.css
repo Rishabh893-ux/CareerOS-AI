@@ -299,6 +299,20 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+/* Text fields show focus with the border and glow above. Browsers treat a
+   focused text field as :focus-visible even after a click, so without this the
+   keyboard ring would draw a second outline around every field as you type. */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]):focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+}
+/* A borderless field inside a styled box (icon + input): the box shows focus
+   with focus-within:border-accent, so the field mustn't draw a square glow
+   inside its rounded corners. */
+input.bg-transparent:focus, textarea.bg-transparent:focus {
+  box-shadow: none;
+}
 
 /* ─── Buttons ─── */
 .btn-primary {

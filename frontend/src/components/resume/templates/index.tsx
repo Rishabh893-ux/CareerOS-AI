@@ -1,21 +1,50 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 
-// US Letter height @ 96dpi - the fixed page size every template renders at.
-const PAGE_HEIGHT_PX = 1056;
+// Every template renders at a fixed US Letter page (816x1056px @ 96dpi).
 
-// Measures the natural (unscaled) height of a template's content and shrinks
-// it via `zoom` so it always fits within one page, however much content is
-// in it - re-measured whenever the resume data or compact toggle changes.
+// Shrinks a template's content via `zoom` so it fills one page as fully as
+// possible without overflowing - re-fitted whenever the resume data or compact
+// toggle changes.
+//
+// A zoomed block still spans the full page width, so it reflows wider and its
+// text wraps less: height doesn't scale linearly with zoom, and a one-shot
+// `page / natural` ratio leaves a blank band at the bottom. So the largest zoom
+// that fits is found by measuring (binary search; layout is cheap here).
 function useAutoFitZoom(deps: React.DependencyList) {
   const ref = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
 
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    el.style.zoom = "1";
-    const natural = el.scrollHeight;
-    setZoom(natural > PAGE_HEIGHT_PX ? PAGE_HEIGHT_PX / natural : 1);
+    const page = el?.parentElement;
+    if (!el || !page) return;
+    let cancelled = false;
+    // Compare against the page box rather than a fixed 1056px: the preview
+    // applies a CSS transform, which scales both rects equally.
+    const fitsAt = (z: number) => {
+      el.style.zoom = String(z);
+      return el.getBoundingClientRect().height <= page.getBoundingClientRect().height;
+    };
+    const fit = () => {
+      if (cancelled) return;
+      let next = 1;
+      if (!fitsAt(1)) {
+        let lo = 0.3, hi = 1;
+        for (let i = 0; i < 12; i++) {
+          const mid = (lo + hi) / 2;
+          if (fitsAt(mid)) lo = mid; else hi = mid;
+        }
+        next = lo;
+      }
+      // Apply it here too: when `next` equals the current state React skips the
+      // re-render, which would leave the last measured zoom on the element.
+      el.style.zoom = String(next);
+      setZoom(next);
+    };
+    fit();
+    // Web fonts can finish loading after the first measure and change line wrapping
+    document.fonts?.ready.then(fit);
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
@@ -173,7 +202,15 @@ export const ClassicAtsTemplate: React.FC<TemplateProps> = ({ data, isCompact })
 export const ModernTemplate: React.FC<TemplateProps> = ({ data, isCompact }) => {
   const { ref, zoom } = useAutoFitZoom([data, isCompact]);
   return (
-    <div className="bg-white text-gray-800 font-sans h-[1056px] w-[816px] mx-auto box-border overflow-hidden">
+    // The page paints the sidebar's colour and divider, so the sidebar runs to the
+    // bottom of the page even when its content is shorter than the page.
+    <div className="text-gray-800 font-sans h-[1056px] w-[816px] mx-auto box-border overflow-hidden"
+      style={{
+        background: "linear-gradient(to right, #f4f4f6 calc(30% - 1px), #e5e7eb calc(30% - 1px), #e5e7eb 30%, #fff 30%)",
+        // Browsers drop backgrounds when printing unless asked; Export PDF prints this page
+        printColorAdjust: "exact",
+        WebkitPrintColorAdjust: "exact",
+      }}>
     <div ref={ref} className="flex" style={{ zoom }}>
 
       {/* Sidebar */}
