@@ -49,23 +49,34 @@ export default function Sidebar({
       ${sidebarOpen ? "w-64" : "w-[76px]"}`}>
 
       {/* Logo */}
-      <div className={`h-16 flex items-center border-b border-line px-4 gap-3`}>
-        <div className="w-8 h-8 rounded-xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast shrink-0 text-sm">
-          C
-        </div>
-        {sidebarOpen && (
-          <div className="flex-1 overflow-hidden">
-            <span className="font-heading font-bold text-base truncate block">
-              CareerOS AI
-            </span>
-          </div>
+      <div className={`h-16 flex items-center border-b border-line gap-3 ${sidebarOpen ? "px-4" : "justify-center"}`}>
+        {sidebarOpen ? (
+          <>
+            <div className="w-8 h-8 rounded-xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast shrink-0 text-sm">
+              C
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <span className="font-heading font-bold text-base truncate block">
+                CareerOS AI
+              </span>
+            </div>
+            <button type="button" onClick={onToggleSidebar}
+              aria-label="Collapse sidebar" aria-expanded
+              className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-foreground transition-all shrink-0">
+              <ChevronLeft size={15} aria-hidden />
+            </button>
+          </>
+        ) : (
+          // Collapsed (tablet and up only) there's no room for the logo and a
+          // separate toggle, so the logo is the toggle: it shows an arrow on
+          // hover or keyboard focus.
+          <button type="button" onClick={onToggleSidebar}
+            aria-label="Expand sidebar" aria-expanded={false} title="Expand sidebar"
+            className="group w-8 h-8 rounded-xl bg-accent brand-mark flex items-center justify-center font-bold text-accent-contrast shrink-0 text-sm">
+            <span className="group-hover:hidden group-focus-visible:hidden" aria-hidden>C</span>
+            <ChevronRight size={16} className="hidden group-hover:block group-focus-visible:block" aria-hidden />
+          </button>
         )}
-        <button type="button" onClick={onToggleSidebar}
-          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          aria-expanded={sidebarOpen}
-          className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-foreground transition-all shrink-0">
-          {sidebarOpen ? <ChevronLeft size={15} aria-hidden /> : <ChevronRight size={15} aria-hidden />}
-        </button>
         <button type="button" onClick={onCloseMobile} aria-label="Close menu"
           className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface text-muted hover:text-foreground shrink-0">
           <X size={16} aria-hidden />
