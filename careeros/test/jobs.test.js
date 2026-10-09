@@ -78,3 +78,38 @@ test("salaries are formatted in the local currency", () => {
   assert.equal(formatSalary(85000, 85000, "us"), "$85,000");
   assert.equal(formatSalary(undefined, undefined, "in"), "");
 });
+
+// ── Tailored resumes ──
+const TAILORED = {
+  template: "modern",
+  data: { name: "Ada", summary: "Backend engineer", skills: ["Node.js", "k8s"], education: [], experience: [], projects: [] },
+};
+
+test("saving a tailored resume stores it and stamps when; clearing it removes both", async () => {
+  const { _id } = await (await post({ company: "Acme", role: "SDE" })).json();
+  const saved = await (await put(_id, { tailoredResume: TAILORED })).json();
+  assert.deepEqual(saved.tailoredResume, TAILORED);
+  assert.ok(saved.tailoredAt);
+  const cleared = await (await put(_id, { tailoredResume: null })).json();
+  assert.equal(cleared.tailoredResume, null);
+  assert.equal(cleared.tailoredAt, undefined);
+});
+
+test("a malformed tailored resume is rejected", async () => {
+  const { _id } = await (await post({ company: "Acme", role: "SDE" })).json();
+  const res = await put(_id, { tailoredResume: { template: "fancy", data: {} } });
+  assert.equal(res.status, 400);
+});
+
+test("keyword-check reports which of the job's skills a draft covers, aliases included", async () => {
+  const { _id } = await (await post({ company: "Acme", role: "SDE" })).json();
+  Object.assign(store.get(_id), { missingSkills: ["Kubernetes", "Kafka"], matchedSkills: ["Node.js"] });
+  const res = await fetch(`${baseUrl}/${_id}/keyword-check`, {
+    method: "POST", headers, body: JSON.stringify({ text: "Built Node.js services and ran them on k8s." }),
+  });
+  assert.deepEqual((await res.json()).keywords, [
+    { term: "Kubernetes", found: true },
+    { term: "Kafka", found: false },
+    { term: "Node.js", found: true },
+  ]);
+});

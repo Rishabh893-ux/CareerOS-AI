@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Check, RefreshCw, Trash2, Info, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { X, Check, RefreshCw, Trash2, Info, ExternalLink, FileText } from "lucide-react";
 import { Job, JobStatus } from "@/features/jobs/types";
 import { useModalDialog } from "@/hooks/useModalDialog";
 import { STATUSES, getMatchColor, toDateInput, timeAgo } from "../jobUtils";
@@ -160,6 +161,19 @@ export default function JobDetailModal({ job, onClose, onSave, onAnalyze, onDele
                       <li key={i} className="text-xs text-foreground leading-relaxed p-3 rounded-xl bg-surface border border-line">{t}</li>
                     ))}
                   </ul>
+                )}
+                {matched.length + missing.length > 0 && (
+                  <div className="p-3 rounded-xl bg-surface border border-line space-y-2">
+                    <Link href={`/resume/builder?job=${job._id}`}
+                      className="w-full py-2 btn-primary text-xs font-semibold flex items-center justify-center gap-1.5">
+                      <FileText size={13} aria-hidden /> {job.tailoredAt ? "Edit tailored resume" : "Tailor resume for this job"}
+                    </Link>
+                    <p className="text-[11px] text-muted text-center">
+                      {job.tailoredAt
+                        ? `Tailored version saved ${timeAgo(job.tailoredAt)}`
+                        : "Edit a copy of your resume with these skills checked live as you type"}
+                    </p>
+                  </div>
                 )}
                 {job.keywordSource === "fallback" && (
                   <p className="text-[11px] text-muted flex gap-1.5"><Info size={12} className="shrink-0 mt-0.5" aria-hidden />AI keyword extraction was unavailable, so only well-known skills were matched.</p>

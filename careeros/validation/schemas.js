@@ -129,11 +129,33 @@ const jobCreate = z.object({
   role: required(200, "Company and role are required."),
   ...jobFields,
 });
+// A resume edited for one job in the builder (frontend ResumeData shape)
+const tailoredResume = z.object({
+  template: z.enum(["classic", "modern"]),
+  isCompact: z.boolean().optional(),
+  data: z.object({
+    name: optional(200),
+    email: optional(254),
+    phone: optional(50),
+    github: optional(200),
+    linkedin: optional(500),
+    location: optional(200),
+    portfolio: optional(2000),
+    summary: optional(5000),
+    skills: stringList(200),
+    education: z.array(education).max(20),
+    experience: z.array(experience).max(50),
+    certifications: z.array(certification).max(50).optional(),
+    projects: z.array(project).max(50),
+  }),
+});
 const jobUpdate = z.object({
   company: required(200, "Company can't be empty.").optional(),
   role: required(200, "Role can't be empty.").optional(),
   ...jobFields,
+  tailoredResume: tailoredResume.nullable().optional(),
 });
+const keywordCheck = z.object({ text: z.string({ required_error: "Required" }).max(50000) });
 const jobSearch = z.object({
   what: z.string().max(200).optional(),
   where: z.string().max(200).optional(),
@@ -147,5 +169,5 @@ module.exports = {
   atsCheck, enhanceBullet, coverLetter,
   targetRole, interviewGenerate, interviewFeedback, copilotAsk,
   outreachGenerate, outreachResearch,
-  jobCreate, jobUpdate, jobSearch,
+  jobCreate, jobUpdate, jobSearch, keywordCheck,
 };
