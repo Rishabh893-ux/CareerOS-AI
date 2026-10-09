@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const InterviewSession = require("../models/InterviewSession");
 const authMiddleware = require("../middleware/auth");
 const { callAI } = require("../services/aiService");
@@ -7,7 +9,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Generate a set of questions (HR or Technical) and save as a new session
-router.post("/generate", async (req, res) => {
+router.post("/generate", validate(schemas.interviewGenerate), async (req, res) => {
   try {
     const { type, topic, format = "Written", limit = 5 } = req.body; // type: "HR" | "Technical", format: "Written" | "MCQ", limit: 5 | 10 | 20
     if (!type || !["HR", "Technical"].includes(type)) {
@@ -51,7 +53,7 @@ Return ONLY JSON in this shape:
 }
 Note: correctAnswer must be a single letter ("A", "B", "C", or "D") corresponding to index 0, 1, 2, or 3.`;
 
-      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true });
+      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true, userId: req.userId });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       sessionData.mcqQuestions = result.data.questions || [];
@@ -61,7 +63,7 @@ Note: correctAnswer must be a single letter ("A", "B", "C", or "D") correspondin
           ? `Generate exactly ${numQuestions} common HR interview questions for a fresher/internship candidate. Return ONLY JSON: { "questions": ["...", ...] }`
           : `Generate exactly ${numQuestions} technical interview questions on the topic "${topic || "general CS fundamentals"}" suitable for a B.Tech CSE internship candidate. Mix conceptual and applied questions. Return ONLY JSON: { "questions": ["...", ...] }`;
 
-      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true });
+      const result = await callAI("interview_questions", prompt, { jsonSchemaHint: true, userId: req.userId });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       sessionData.questions = result.data.questions || [];
@@ -75,7 +77,7 @@ Note: correctAnswer must be a single letter ("A", "B", "C", or "D") correspondin
 });
 
 // Submit answers to a session for feedback (mock interview evaluation)
-router.post("/:id/feedback", async (req, res) => {
+router.post("/:id/feedback", validate(schemas.interviewFeedback), async (req, res) => {
   try {
     const { answers } = req.body; // array of strings (user answers)
     if (!Array.isArray(answers) || answers.length === 0) {
@@ -124,7 +126,7 @@ ${JSON.stringify(qa)}
 
 Return ONLY JSON: { "feedback": "2-4 sentence overall feedback", "improvementAreas": ["area1", "area2"] }`;
 
-      const result = await callAI("mock_interview", prompt, { jsonSchemaHint: true });
+      const result = await callAI("mock_interview", prompt, { jsonSchemaHint: true, userId: req.userId });
       if (!result.success) return res.status(503).json({ error: result.error });
 
       session.userAnswers = answers;

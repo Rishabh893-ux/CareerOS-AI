@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const Profile = require("../models/Profile");
@@ -56,7 +58,7 @@ router.post("/upload", upload.single("resume"), async (req, res) => {
     const resumeUrl = uploadResult.secure_url;
 
     // 2. Extract text
-    const resumeText = await extractResumeFileText(req.file);
+    const resumeText = await extractResumeFileText(req.file, req.userId);
 
     if (!resumeText || resumeText.length < 30) {
       return res.status(422).json({ error: "Could not extract readable text from the uploaded file. Please try a clearer PDF or image." });
@@ -122,8 +124,7 @@ CRITICAL EXTRACTION RULES:
 Resume text:
 """${resumeText.slice(0, 8000)}"""`;
 
-    const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true });
-    console.log("[Resume Parse] Claude Success:", result.success, "Data:", result.data);
+    const result = await callAI("resume_parse", prompt, { jsonSchemaHint: true, userId: req.userId });
     
     let extractedSkills = [];
     let profile = null;
@@ -132,7 +133,7 @@ Resume text:
     if (result.success && result.data && typeof result.data === "object") {
       let { skills, careerGoal, education, experience, certifications, projects, phone, location, portfolioUrl, githubUrl, linkedinUrl } = result.data;
       // Store the goal as plain text; strip a label the model may add anyway.
-      careerGoal = typeof careerGoal === "string" ? careerGoal.replace(/^s*objectives*:s*/i, "").trim() : "";
+      careerGoal = typeof careerGoal === "string" ? careerGoal.replace(/^\s*objective\s*:\s*/i, "").trim() : "";
 
       // Update basic fields on Profile
       const profileUpdates = {
@@ -205,7 +206,7 @@ router.delete("/", async (req, res) => {
 // services/atsAnalyzer.js). The AI is used only to pull keywords out of the
 // job description; with no JD this is a free "resume health" check.
 
-router.post("/ats-check", upload.single("resume"), async (req, res) => {
+router.post("/ats-check", upload.single("resume"), validate(schemas.atsCheck), async (req, res) => {
   try {
     const jobDescription = (req.body.jobDescription || "").trim();
     const profile = await Profile.findOne({ user: req.userId });
@@ -213,7 +214,7 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
     let resumeText;
     let source;
     if (req.file) {
-      resumeText = await extractResumeFileText(req.file);
+      resumeText = await extractResumeFileText(req.file, req.userId);
       if (!resumeText || resumeText.length < 30) {
         return res.status(422).json({ error: "Could not read text from that file. Try a text-based PDF rather than a scan." });
       }
@@ -232,13 +233,15 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
 
     // A few words aren't a job description; treat them as none.
     const hasJd = jobDescription.split(/\s+/).length >= 15;
-    const keywordList = hasJd ? await extractJobKeywords(jobDescription) : null;
+    const keywordList = hasJd ? await extractJobKeywords(jobDescription, "ats_check", req.userId) : null;
     const analysis = analyzeAts(resumeText, keywordList);
 
     const result = {
       ...analysis,
       keywordSource: keywordList?.source || null,
       resumeSource: source,
+      // Saved so the page can refill the job description box after a reload
+      jobDescription: hasJd ? jobDescription.slice(0, 10000) : "",
       checkedAt: new Date(),
     };
 
@@ -255,7 +258,7 @@ router.post("/ats-check", upload.single("resume"), async (req, res) => {
 });
 
 // ── POST /api/resume/enhance-bullet ──
-router.post("/enhance-bullet", async (req, res) => {
+router.post("/enhance-bullet", validate(schemas.enhanceBullet), async (req, res) => {
   try {
     const { text, type } = req.body;
     if (!text) return res.status(400).json({ error: "Text is required" });
@@ -279,7 +282,7 @@ Original Text:
 """${text.slice(0, 2000)}"""`;
     }
 
-    const result = await callAI("enhance_bullet", prompt);
+    const result = await callAI("enhance_bullet", prompt, { userId: req.userId });
     if (!result.success) return res.status(503).json({ error: result.error });
 
     const enhancedText = result.data.replace(/^[-*•]\s*/gm, '').trim();
@@ -290,7 +293,7 @@ Original Text:
 });
 
 // ── POST /api/resume/cover-letter ──
-router.post("/cover-letter", async (req, res) => {
+router.post("/cover-letter", validate(schemas.coverLetter), async (req, res) => {
   try {
     const { companyName, roleTitle, jobDescription, tone } = req.body;
     if (!companyName || !roleTitle) {
@@ -329,7 +332,7 @@ Rules:
 - Close with a clear, confident call to action.
 - Return ONLY the letter body text, no subject line, no "Dear Hiring Manager" placeholders beyond a normal greeting, no markdown formatting.`;
 
-    const result = await callAI("cover_letter", prompt);
+    const result = await callAI("cover_letter", prompt, { userId: req.userId });
     if (!result.success) return res.status(503).json({ error: result.error });
 
     res.json({ letter: typeof result.data === "string" ? result.data.trim() : String(result.data) });

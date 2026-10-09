@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { fetchWithAuth } from "@/lib/api";
-import { ResumeData, TemplateId } from "@/components/resume/templates";
-import { Toolbar } from "@/components/resume-builder/Toolbar";
-import { EditorSidebar } from "@/components/resume-builder/EditorSidebar";
-import { PreviewPane } from "@/components/resume-builder/PreviewPane";
-import type { EnhancingState, ResumeBuilderTab } from "@/types/resume-builder";
+import { ResumeData, TemplateId } from "@/features/resume-builder/templates";
+import { Toolbar } from "@/features/resume-builder/components/Toolbar";
+import { EditorSidebar } from "@/features/resume-builder/components/EditorSidebar";
+import { PreviewPane } from "@/features/resume-builder/components/PreviewPane";
+import { TailorBar } from "@/features/resume-builder/components/TailorBar";
+import { resumeText } from "@/features/resume-builder/resumeText";
+import type { EnhancingState, KeywordCoverage, ResumeBuilderTab, TailoredResume, TailoringJob } from "@/features/resume-builder/types";
 import { mergeSkills } from "@/lib/skills";
 
 export default function ResumeBuilder() {
@@ -30,6 +32,12 @@ export default function ResumeBuilder() {
   const [isCompact, setIsCompact] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState<EnhancingState | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Tailoring mode: opened from a tracked job as /resume/builder?job=<id>
+  const [job, setJob] = useState<TailoringJob | null>(null);
+  const [keywords, setKeywords] = useState<KeywordCoverage[] | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [savingTailored, setSavingTailored] = useState(false);
 
   const getAtsWarnings = () => {
     const warnings = [];
@@ -73,10 +81,26 @@ export default function ResumeBuilder() {
 
   const loadData = async () => {
     try {
-      const [profileRes, authRes] = await Promise.all([
+      const jobId = new URLSearchParams(window.location.search).get("job");
+      const [profileRes, authRes, jobRes] = await Promise.all([
         fetchWithAuth("/profile", { method: "GET" }).catch(() => null),
-        fetchWithAuth("/auth/me", { method: "GET" }).catch(() => null)
+        fetchWithAuth("/auth/me", { method: "GET" }).catch(() => null),
+        jobId ? fetchWithAuth(`/jobs/${jobId}`, { method: "GET" }).catch(() => null) : null,
       ]);
+
+      if (jobRes) {
+        setJob({ id: jobRes._id, role: jobRes.role, company: jobRes.company, tailoredAt: jobRes.tailoredAt });
+        // A version already tailored for this job takes priority over the profile
+        const saved: TailoredResume | undefined = jobRes.tailoredResume;
+        if (saved) {
+          const savedData = { ...saved.data, certifications: saved.data.certifications || [] };
+          setData(savedData);
+          setTemplate(saved.template);
+          setIsCompact(!!saved.isCompact);
+          setSavedSnapshot(JSON.stringify({ template: saved.template, isCompact: !!saved.isCompact, data: savedData }));
+          return;
+        }
+      }
 
       setData({
         name: authRes?.name || "",
@@ -100,10 +124,47 @@ export default function ResumeBuilder() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, []);
+
+  // Re-check the job's skills as the draft changes (debounced; no AI call)
+  useEffect(() => {
+    if (!job) return;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetchWithAuth(`/jobs/${job.id}/keyword-check`, {
+          method: "POST",
+          body: JSON.stringify({ text: resumeText(data) }),
+        });
+        setKeywords(res.keywords);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [job, data]);
+
+  const tailoredSnapshot = JSON.stringify({ template, isCompact, data });
+  const tailoredDirty = tailoredSnapshot !== savedSnapshot;
+
+  const handleSaveTailored = async () => {
+    if (!job) return;
+    setSavingTailored(true);
+    try {
+      const updated = await fetchWithAuth(`/jobs/${job.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ tailoredResume: { template, isCompact, data } }),
+      });
+      setSavedSnapshot(tailoredSnapshot);
+      setJob((j) => (j ? { ...j, tailoredAt: updated.tailoredAt } : j));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingTailored(false);
+    }
+  };
 
   const handleExport = () => {
     if (printRef.current) {
@@ -135,6 +196,17 @@ export default function ResumeBuilder() {
         onCompactChange={setIsCompact}
         onExport={handleExport}
       />
+
+      {job && (
+        <TailorBar
+          job={job}
+          keywords={keywords}
+          saving={savingTailored}
+          dirty={tailoredDirty}
+          savedAt={job.tailoredAt}
+          onSave={handleSaveTailored}
+        />
+      )}
 
       {/* Main Split Layout */}
       <div className="flex-1 flex overflow-hidden">

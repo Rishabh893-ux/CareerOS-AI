@@ -172,3 +172,48 @@ test("PUT /settings with an empty username removes it instead of storing \"\"", 
     spy.restore();
   }
 });
+
+// ── Forgot password ──
+// SMTP isn't configured in tests, which is exactly the risky case: the reset
+// link must only ever be handed back in local development.
+async function forgotPassword(email, nodeEnv) {
+  const saved = process.env.NODE_ENV;
+  if (nodeEnv === undefined) delete process.env.NODE_ENV; // assigning undefined would store "undefined"
+  else process.env.NODE_ENV = nodeEnv;
+  try {
+    const res = await post("/forgot-password", { email });
+    return { status: res.status, body: await res.json() };
+  } finally {
+    if (saved === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = saved;
+  }
+}
+
+function seedResettableUser(email) {
+  const user = { _id: "42", email, async save() { return this; } };
+  users.push(user);
+  return user;
+}
+
+test("forgot-password gives the same reply for unknown emails, so accounts can't be discovered", async () => {
+  seedResettableUser("ada@example.com");
+  const known = await forgotPassword("ada@example.com", "production");
+  const unknown = await forgotPassword("ghost@example.com", "production");
+  assert.equal(unknown.status, 200);
+  assert.deepEqual(unknown, known);
+});
+
+test("forgot-password never returns the reset link outside development", async () => {
+  const user = seedResettableUser("ada@example.com");
+  for (const nodeEnv of ["production", undefined]) {
+    const { body } = await forgotPassword("ada@example.com", nodeEnv);
+    assert.ok(user.resetPasswordToken, "a token is still issued for the email");
+    assert.ok(!JSON.stringify(body).includes(user.resetPasswordToken), `token leaked with NODE_ENV=${nodeEnv}`);
+  }
+});
+
+test("forgot-password returns the link in local development when no email server is set", async () => {
+  const user = seedResettableUser("ada@example.com");
+  const { body } = await forgotPassword("ada@example.com", "development");
+  assert.ok(body.message.includes(user.resetPasswordToken));
+});

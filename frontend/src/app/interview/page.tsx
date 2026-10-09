@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import { InterviewSession } from "@/types/interview";
-import SetupForm from "@/components/interview/SetupForm";
-import JournalList from "@/components/interview/JournalList";
-import QuestionCard from "@/components/interview/QuestionCard";
-import ResultsView from "@/components/interview/ResultsView";
+import { InterviewSession } from "@/features/interview/types";
+import SetupForm from "@/features/interview/components/SetupForm";
+import JournalList from "@/features/interview/components/JournalList";
+import QuestionCard from "@/features/interview/components/QuestionCard";
+import ResultsView from "@/features/interview/components/ResultsView";
 
 export default function InterviewPage() {
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
@@ -38,6 +38,7 @@ export default function InterviewPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSessions();
   }, []);
 

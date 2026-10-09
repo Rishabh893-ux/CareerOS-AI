@@ -89,16 +89,29 @@ function fallbackKeywords(jobDescription) {
   return { role: "", required: FALLBACK_TERMS.filter((t) => containsTerm(jd, t)), preferred: [] };
 }
 
-function matchKeywords(resumeText, { required = [], preferred = [] }) {
+/** Returns a function that tells whether a term appears in this resume text. */
+function termFinder(resumeText) {
   const text = normalize(resumeText);
-  const golang = /golang/i.test(resumeText);
+  // "Go" is matched case-sensitively (see containsShortTerm), so also accept "Golang"
+  const golang = /\bgolang\b/i.test(resumeText);
+  return (term) => containsTerm(text, term, resumeText) || (/^go$/i.test(term) && golang);
+}
+
+function matchKeywords(resumeText, { required = [], preferred = [] }) {
+  const isFound = termFinder(resumeText);
   const seen = new Set();
   const toItems = (terms) =>
     terms
       .map((t) => String(t).trim())
       .filter((t) => t && t.length <= 40 && !seen.has(canonical(t)) && seen.add(canonical(t)))
-      .map((term) => ({ term, found: containsTerm(text, term, resumeText) || (/^go$/i.test(term) && golang) }));
+      .map((term) => ({ term, found: isFound(term) }));
   return { required: toItems(required).slice(0, 15), preferred: toItems(preferred).slice(0, 10) };
+}
+
+/** Which of these terms a resume covers, with the same matching as the ATS check. */
+function findTerms(resumeText, terms) {
+  const isFound = termFinder(resumeText);
+  return terms.map((term) => ({ term, found: isFound(term) }));
 }
 
 function runChecks(resumeText) {
@@ -207,4 +220,4 @@ function analyzeAts(resumeText, keywordList) {
   };
 }
 
-module.exports = { analyzeAts, fallbackKeywords, containsTerm, normalize };
+module.exports = { analyzeAts, fallbackKeywords, containsTerm, normalize, findTerms };

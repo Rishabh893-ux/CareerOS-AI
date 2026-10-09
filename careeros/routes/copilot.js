@@ -1,4 +1,6 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const Profile = require("../models/Profile");
 const JobApplication = require("../models/JobApplication");
 const authMiddleware = require("../middleware/auth");
@@ -7,7 +9,7 @@ const { callAI } = require("../services/aiService");
 const router = express.Router();
 router.use(authMiddleware);
 
-router.post("/ask", async (req, res) => {
+router.post("/ask", validate(schemas.copilotAsk), async (req, res) => {
   try {
     const { question } = req.body;
     if (!question) return res.status(400).json({ error: "question is required" });
@@ -26,7 +28,6 @@ router.post("/ask", async (req, res) => {
         ? { score: profile.careerScore.score, weaknesses: profile.careerScore.weaknesses }
         : "not yet computed - tell user to run /career/score first",
       githubScore: profile?.githubAnalysis?.score ?? "not yet computed",
-      linkedinScore: profile?.linkedinAnalysis?.score ?? "not yet computed",
       skillGap: profile?.skillGap?.missingSkills ?? "not yet computed - tell user to run /growth/skill-gap",
       roadmap: profile?.roadmap?.steps?.map((s) => s.title) ?? "not yet computed",
       applications: jobs,
@@ -41,7 +42,7 @@ Answer concisely and actionably.
 
 User question: "${question}"`;
 
-    const result = await callAI("ai_copilot", prompt);
+    const result = await callAI("ai_copilot", prompt, { userId: req.userId });
 
     if (!result.success) {
       return res.status(503).json({

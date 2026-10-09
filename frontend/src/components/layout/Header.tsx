@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Sparkles, Settings, LogOut, Menu } from "lucide-react";
 import ThemeToggleButton from "./ThemeToggleButton";
-import type { Theme } from "@/lib/useTheme";
-import type { UserData } from "@/types/layout";
+import type { Theme } from "@/hooks/useTheme";
+import type { UserData } from "@/components/layout/types";
 
 interface HeaderProps {
   pageTitle: string;

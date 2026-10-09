@@ -1,6 +1,6 @@
 const pdfParseLib = require("pdf-parse");
 const pdfParse = pdfParseLib.default || pdfParseLib; // handle both ESM default and CJS export
-const { chatCompletion, VISION_MODEL } = require("./aiService");
+const { callVision } = require("./aiService");
 
 // ── Helper: extract text from PDF buffer via pdf-parse ──
 async function extractTextFromPdf(buffer) {
@@ -63,16 +63,17 @@ async function extractTextViaPdfJs(buffer) {
 }
 
 // ── Helper: extract text from a single image buffer via Groq Vision (qwen3.8-27b) ──
-async function extractTextFromImageBuffer(buffer, mimeType) {
+// Goes through callVision() so OCR counts against the daily quota and rate limits.
+async function extractTextFromImageBuffer(buffer, mimeType, userId) {
   const base64 = buffer.toString("base64");
 
-  const text = await chatCompletion([{
+  const text = await callVision("resume_ocr", [{
     role: "user",
     content: [
       { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
       { type: "text", text: "Extract ALL text from this resume image exactly as it appears. Return only the raw text content, no commentary." },
     ],
-  }], { model: VISION_MODEL });
+  }], { userId });
 
   return text.trim();
 }
@@ -84,7 +85,7 @@ async function extractTextFromImageBuffer(buffer, mimeType) {
 // through Groq Vision instead.
 const MAX_VISION_PAGES = 5;
 
-async function extractTextFromScannedPdf(buffer) {
+async function extractTextFromScannedPdf(buffer, userId) {
   const pdfjsLib = await getPdfjsLib();
   const { createCanvas } = require("@napi-rs/canvas");
 
@@ -97,7 +98,7 @@ async function extractTextFromScannedPdf(buffer) {
     const viewport = page.getViewport({ scale: 2 });
     const canvas = createCanvas(viewport.width, viewport.height);
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-    const pageText = await extractTextFromImageBuffer(canvas.toBuffer("image/png"), "image/png");
+    const pageText = await extractTextFromImageBuffer(canvas.toBuffer("image/png"), "image/png", userId);
     pageTexts.push(pageText);
   }
   return pageTexts.join("\n\n");
@@ -108,7 +109,8 @@ async function extractTextFromScannedPdf(buffer) {
 // (recovers text pdf-parse chokes on, still no rendering involved), and only
 // fall back to rasterizing pages + Groq Vision if there's truly no text layer
 // (a scanned/image-only PDF). Images always go straight through Groq Vision.
-async function extractResumeFileText(file) {
+// userId applies the per-user AI rate limit to the OCR calls.
+async function extractResumeFileText(file, userId = null) {
   const isPdf = file.mimetype === "application/pdf";
   const isImage = file.mimetype.startsWith("image/");
 
@@ -120,10 +122,10 @@ async function extractResumeFileText(file) {
     if (pdfjsText) return pdfjsText;
 
     console.log("[Resume] Falling back to Groq Vision (page rasterization) for scanned PDF");
-    return extractTextFromScannedPdf(file.buffer);
+    return extractTextFromScannedPdf(file.buffer, userId);
   }
   if (isImage) {
-    return extractTextFromImageBuffer(file.buffer, file.mimetype);
+    return extractTextFromImageBuffer(file.buffer, file.mimetype, userId);
   }
   return "";
 }

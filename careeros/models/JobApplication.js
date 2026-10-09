@@ -25,6 +25,11 @@ const jobApplicationSchema = new mongoose.Schema(
     strengths: [{ type: String }],
     weaknesses: [{ type: String }],
     tips: [{ type: String }],
+    // A copy of the resume edited for this job in the builder: { template,
+    // isCompact, data } with the builder's ResumeData shape. Validated on the
+    // way in (validation/schemas.js), so stored as-is.
+    tailoredResume: { type: mongoose.Schema.Types.Mixed },
+    tailoredAt: { type: Date },
   },
   { timestamps: true }
 );

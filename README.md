@@ -54,7 +54,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 - **Career score (0–100):** readiness from a fixed, explainable weighting across skills, projects and GitHub activity.
 - **Profile completeness:** a progress bar that names what to add next ("Add GitHub to sharpen your career score").
 - **Growth roadmap and skill gap:** enter a target role to get the missing skills, a step-by-step learning plan and a career-path ladder with realistic year ranges.
-- **Profile editor:** labelled forms for goal, skills (including those pulled from your resume), education and projects.
+- **Profile editor:** labelled forms for goal, skills (including those pulled from your resume), education, experience, certifications and projects.
 
 ### GitHub analyzer
 - **Measured score:** built from five signals (documentation, activity, showcase, community, breadth), each with the detail behind it, such as "5/6 recent repos have a README".
@@ -64,7 +64,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 
 ### Resume and ATS
 - **Resume parser:** PDF or image upload with three-tier text extraction (`pdf-parse` → `pdfjs-dist` text layer → Groq Vision OCR), so scanned resumes work too.
-- **ATS match:** paste a job description and the AI extracts its required and nice-to-have keywords. Each one is then checked against your **full** resume text, with aliases (`k8s` → Kubernetes, `RESTful` → REST API) and guards against false matches ("next steps" isn't Next.js).
+- **ATS match:** paste a job description and the AI extracts its required and nice-to-have keywords. The description is saved with the result, so it's still there when you come back. Each one is then checked against your **full** resume text, with aliases (`k8s` → Kubernetes, `RESTful` → REST API) and guards against false matches ("next steps" isn't Next.js).
 - **Resume health:** with no job description, ten format checks run with no AI call: contact details, standard section headings, length, bullets with numbers and bullets that start with action verbs.
 - **What an ATS actually sees:** the raw extracted text, so you can spot columns or icons that break parsing.
 - **Resume builder and cover letters:** two ATS-friendly templates that auto-fit to one page, plus a cover letter generator grounded only in your real experience.
@@ -74,6 +74,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 - **Pipeline summary:** tracked, applied, response rate, and interviews and offers.
 - **Job detail dialog:** edit notes, dates, the posting link and the job description. The applied date fills in automatically.
 - **Keyword-based match:** the same matcher as the ATS check shows which skills you have and which you're missing, and it re-runs when the description changes.
+- **Tailor your resume for a job:** from any matched job, open the resume builder on a copy of your resume. The job's skills are listed at the top and turn green as you add them (same matching as the ATS check, aliases included), and the tailored version is saved with the job.
 - **Live search:** real openings from Adzuna with formatted salaries. The same posting can't be tracked twice, and sample listings are clearly labelled when live search is unavailable.
 
 ### Mock interviews
@@ -142,7 +143,7 @@ All screenshots show the built-in demo account.
 | Layer | Technology |
 |---|---|
 | **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Lucide icons |
-| **Backend** | Node.js 20+, Express, Mongoose, Multer |
+| **Backend** | Node.js 20+, Express, Mongoose, Multer, zod (validation), helmet and express-rate-limit (security) |
 | **Database** | MongoDB Atlas |
 | **AI** | [Groq](https://groq.com/): `openai/gpt-oss-120b` for text, `qwen/qwen3.8-27b` for vision OCR on scanned resumes |
 | **File storage** | Cloudinary (resume files) |
@@ -190,13 +191,15 @@ flowchart LR
     AI --> Groq
 ```
 
-- **Every AI call goes through one service** (`aiService.js`), where the rate limiting, daily quota and cache fallback live.
+- **Every AI call goes through one service** (`aiService.js`), where the rate limiting, daily quota and cache fallback live. That includes the vision OCR for scanned resumes.
+- **Every route that takes input validates it first** with [zod](https://zod.dev/) (`validation/schemas.js`). Bad input gets a clear 400, unknown fields are dropped, and values can't smuggle Mongo query operators into a filter.
+- **Security basics on every response:** standard security headers (`helmet`), and per-IP rate limits on registration, login, password reset and the demo.
 - **Scoring is pure and tested:** `atsAnalyzer.js` and `githubScoring.js` take data in and return scores, with no I/O. That's what makes them repeatable and easy to test.
 - **Resume files live in Cloudinary;** only the URL and the extracted text are stored in MongoDB.
 
 ### API reference
 
-All routes are under `/api`. Everything except registration, login, password reset, the demo and public portfolios needs a `Bearer` token.
+All routes are under `/api`. Everything except registration, login, password reset, the demo and public portfolios needs a `Bearer` token. Registration, login, password reset and the demo are rate-limited per IP.
 
 | Module | Endpoints | What it does |
 |---|---|---|
@@ -207,7 +210,7 @@ All routes are under `/api`. Everything except registration, login, password res
 | **Career** `/career` | `GET /score` | The 0–100 career readiness score (cached) |
 | **Growth** `/growth` | `POST /skill-gap` `POST /roadmap` `POST /career-path` | Missing skills, learning roadmap and career ladder for a target role, cached per role |
 | **Interview** `/interview` | `POST /generate` `POST /:id/feedback` `GET /` `DELETE /:id` | Generates sessions, scores answers and keeps the journal |
-| **Jobs** `/jobs` | `GET /` `POST /` `PUT /:id` `DELETE /:id` `POST /:id/analyze` `GET /search` | Kanban tracker, keyword match (re-run on demand) and Adzuna search |
+| **Jobs** `/jobs` | `GET /` `GET /:id` `POST /` `PUT /:id` `DELETE /:id` `POST /:id/analyze` `POST /:id/keyword-check` `GET /search` | Kanban tracker, keyword match (re-run on demand), tailored resumes and Adzuna search |
 | **Outreach** `/outreach` | `POST /generate` `POST /research` | Networking messages and company research briefs |
 | **Copilot** `/copilot` | `POST /ask` | Chat answers from the user's saved data |
 
@@ -251,12 +254,15 @@ npm run dev             # http://localhost:5001
 | `JWT_SECRET` | Yes | Long random string for signing sessions |
 | `GROQ_API_KEY` | Yes | AI features |
 | `PORT` | No | Defaults to `5001` |
+| `TRUST_PROXY` | No | Reverse-proxy hops in front of the server, so rate limits see real visitor IPs (default `1`, right for Render, Railway and similar; `0` if the server is exposed directly) |
+| `NODE_ENV` | No | Set to `development` only on your own machine. Never use `development` on a deployed server: it shows password-reset links in the API response |
 | `FRONTEND_URL` | No | Used in password-reset links (default setup: `http://localhost:3000`) |
 | `GITHUB_TOKEN` | No | Raises GitHub's rate limit from 60 to 5,000 requests an hour |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | For uploads | Resume file storage |
 | `ADZUNA_APP_ID`, `ADZUNA_API_KEY` | No | Live job search; without them, search shows labelled sample listings |
-| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails; without them, the reset link is logged to the console |
+| `SMTP_EMAIL`, `SMTP_PASSWORD` | No | Sends password-reset emails. Without them, the reset link is shown on screen and logged only when `NODE_ENV=development`; anywhere else no link is given out, so set these in production if you want password resets to work |
 | `AI_DAILY_LIMIT`, `AI_CACHE_TTL_HOURS` | No | Quota guardrails (defaults `1400` and `24`) |
+| `AI_USER_RATE_LIMIT`, `AI_GLOBAL_RATE_LIMIT` | No | AI calls allowed per minute for each user and for everyone combined (defaults `10` and `30`) |
 
 ### 2. Frontend (`/frontend`)
 ```bash
@@ -280,10 +286,13 @@ cd frontend && npm run lint && npx tsc --noEmit && npm run build
 ```
 
 The backend tests stub the database models and run each route on a random port, so they need no MongoDB or network access. They cover:
-- **Auth:** email case handling, deleted accounts and partial settings updates
+- **Auth:** email case handling, deleted accounts, partial settings updates, and password resets that never reveal whether an account exists or hand out the link outside development
 - **GitHub scoring:** repeatability, and recommendations that name the right repos
 - **ATS analyzer:** aliases, false-positive guards, full-text matching and format checks
-- **Job tracker routes:** duplicate tracking, applied dates, re-matching and salary formatting
+- **Job tracker routes:** duplicate tracking, applied dates, re-matching, salary formatting, and saving and keyword-checking tailored resumes
+- **Rate limits and the demo account:** sign-in attempts are capped, and the shared demo resets once its data is a day old
+- **AI service:** per-user and global rate limits, the daily quota, invalid JSON replies and a missing API key
+- **Request validation:** operator injection, stripped fields, partial updates and the routes' error messages
 
 CI runs all of the above on every push and pull request to `main`.
 
@@ -294,18 +303,29 @@ CI runs all of the above on every push and pull request to `main`.
 ```
 careeros/                 Express API
 ├── routes/               auth, profile, resume, github, career, growth, interview, jobs, outreach, copilot
+├── middleware/           auth (JWT), validate (zod) and rate limits
+├── validation/           request schemas for every route that takes input
 ├── services/             aiService, atsAnalyzer, githubScoring, githubService, jobKeywords,
-│                         jobMatchService, resumeTextExtractor, profileUtils, cacheUtils
+│                         jobMatchService, resumeTextExtractor, profileUtils, cacheUtils, demoAccount
 ├── models/               User, Profile, JobApplication, InterviewSession, UsageLog
-├── scripts/              one-off maintenance scripts
 └── test/                 node:test suites
 
 frontend/src/             Next.js app
-├── app/                  routes: dashboard, resume (+ builder), interview, outreach, jobs, p/[username], auth pages
-├── components/           feature folders (dashboard, resume, jobs, interview, portfolio, layout)
-├── lib/                  api client, theme, dialog, skills and project-repo helpers
-└── types/                shared TypeScript types
+├── app/                  routes only: dashboard, resume (+ builder), interview, outreach, jobs, p/[username], auth pages
+├── features/             one folder per feature, each with its own components/ and types.ts
+│   ├── dashboard/        score, insights, skills, GitHub, roadmap cards and the profile editor
+│   ├── resume/           resume parser, ATS check and report, cover letter
+│   ├── resume-builder/   editor tabs, live preview, one-page templates and tailoring for a job
+│   ├── jobs/             Kanban tracker, job search and modals
+│   ├── interview/        mock interview setup, questions, results and journal
+│   ├── outreach/         company research brief
+│   └── portfolio/        public portfolio sections
+├── components/layout/    app shell shared by every page: sidebar, header, Copilot drawer, settings
+├── hooks/                shared React hooks (theme, modal dialog)
+└── lib/                  shared helpers: API client, skills, project-to-repo linking
 ```
+
+A page in `app/` imports from its feature folder; features don't import from each other, and anything two features need lives in `components/`, `hooks/` or `lib/`.
 
 ---
 
@@ -323,7 +343,7 @@ frontend/src/             Next.js app
 
 To stay within a free-tier Groq key:
 1. **Daily quota** (`UsageLog` collection): calls stop once `AI_DAILY_LIMIT` is reached, and cached or fallback data is served instead of an error.
-2. **Rate limiting:** an in-memory token bucket allows at most 10 calls a minute.
+2. **Rate limiting:** in-memory limits allow each user 10 calls a minute, and everyone combined 30, so one busy user can't lock others out. Both are counted per server process.
 3. **Caching:** the GitHub analysis and career score are cached on the profile for `AI_CACHE_TTL_HOURS` (default 24h), unless you refresh.
 4. **No AI where it isn't needed:** resume health checks, all score calculations and MCQ grading run in code.
 
@@ -333,20 +353,17 @@ To stay within a free-tier Groq key:
 
 - **Frontend:** Vercel. Set `NEXT_PUBLIC_API_URL` to your backend URL.
 - **Backend:** any Node 20+ host. Set the variables listed above and point `FRONTEND_URL` at the deployed frontend.
-- **Upgrading an existing database:** earlier versions stored career goals as `"Objective: …"`. Run this once from `careeros/` (without `--apply` it only reports what it would change):
-  ```bash
-  node scripts/strip-objective-prefix.js --apply
-  ```
-- **Refreshing the demo account:** the demo's sample data is only created the first time someone opens it. To pick up new sample data on an existing database, delete the `demo@careeros.ai` user along with its profile and job applications; it's recreated on the next **Try the Demo**.
+- **The demo account resets itself:** every visitor shares it and can edit it, so its data is put back to the built-in sample (`careeros/services/demoAccount.js`) when someone opens the demo and the data is more than a day old. Changes to the sample show up within a day.
 
 ---
 
 ## Roadmap
 
-- [ ] Edit experience and certifications directly in the profile editor
-- [ ] Request validation (e.g. `zod`) on every route
+- [x] Edit experience and certifications directly in the profile editor
+- [x] Request validation (`zod`) on every route that takes input
 - [ ] Frontend component tests
-- [ ] Remember the pasted job description alongside the saved ATS result
+- [x] Remember the pasted job description alongside the saved ATS result
+- [ ] Share rate limits across server instances (e.g. Redis)
 
 ---
 

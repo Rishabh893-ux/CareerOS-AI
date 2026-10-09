@@ -1,11 +1,13 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const authMiddleware = require("../middleware/auth");
 const Profile = require("../models/Profile");
 const { callAI } = require("../services/aiService");
 
 const router = express.Router();
 
-router.post("/generate", authMiddleware, async (req, res) => {
+router.post("/generate", authMiddleware, validate(schemas.outreachGenerate), async (req, res) => {
   try {
     const { recipientName, companyName, targetRole, platform, context } = req.body;
     
@@ -44,7 +46,7 @@ Instructions:
 
 Return ONLY the raw message text (and subject line if Email). Do not wrap it in markdown code blocks.`;
 
-    const result = await callAI("generate_outreach", prompt);
+    const result = await callAI("generate_outreach", prompt, { userId: req.userId });
     if (!result.success) {
       return res.status(503).json({ error: result.error });
     }
@@ -56,7 +58,7 @@ Return ONLY the raw message text (and subject line if Email). Do not wrap it in 
   }
 });
 
-router.post("/research", authMiddleware, async (req, res) => {
+router.post("/research", authMiddleware, validate(schemas.outreachResearch), async (req, res) => {
   try {
     const { companyName, targetRole } = req.body;
     if (!companyName) {
@@ -76,7 +78,7 @@ Return ONLY JSON in this exact shape:
   "verifyBeforeYouGo": ["3-5 specific things the candidate should look up themselves right before reaching out — e.g. recent news, funding stage, leadership, product launches, glassdoor reviews — framed as a checklist, not answered"]
 }`;
 
-    const result = await callAI("company_research", prompt, { jsonSchemaHint: true });
+    const result = await callAI("company_research", prompt, { jsonSchemaHint: true, userId: req.userId });
     if (!result.success) {
       return res.status(503).json({ error: result.error });
     }

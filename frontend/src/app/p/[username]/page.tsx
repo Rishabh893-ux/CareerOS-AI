@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PortfolioView from "@/components/portfolio/PortfolioView";
-import { PortfolioData } from "@/types/portfolio";
+import PortfolioView from "@/features/portfolio/components/PortfolioView";
+import { PortfolioData } from "@/features/portfolio/types";
 import { API_BASE } from "@/lib/api";
 
 interface PageProps {

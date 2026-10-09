@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { fetchWithAuth } from "@/lib/api";
 import { Copy, Mail, Send, Check, Sparkles, Building2, User, Briefcase } from "lucide-react";
-import { CompanyResearchCard } from "@/components/dashboard/CompanyResearchCard";
+import { CompanyResearchCard } from "@/features/outreach/components/CompanyResearchCard";
 
 export default function OutreachPage() {
   const [recipientName, setRecipientName] = useState("");

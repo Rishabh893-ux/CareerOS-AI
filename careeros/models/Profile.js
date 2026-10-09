@@ -79,6 +79,7 @@ const profileSchema = new mongoose.Schema(
       suggestions: [String],
       keywordSource: String,
       resumeSource: String,
+      jobDescription: String, // the pasted JD this check ran against ("" for health checks)
       checkedAt: Date,
     },
     githubAnalysis: {
@@ -115,20 +116,6 @@ const profileSchema = new mongoose.Schema(
           hasReadme: Boolean,
         }
       ],
-      computedAt: Date,
-    },
-
-    // LinkedIn has no scrapeable free API - user pastes their own text instead
-    linkedinManualInput: {
-      headline: String,
-      about: String,
-      skillsListed: [String],
-    },
-    linkedinAnalysis: {
-      score: Number,
-      headlineFeedback: String,
-      aboutFeedback: String,
-      suggestedHeadline: String,
       computedAt: Date,
     },
 

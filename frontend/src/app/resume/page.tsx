@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import { Profile, AtsResult, ACCEPTED_TYPES } from "@/types/resume";
-import { ResumeParserCard } from "@/components/resume/ResumeParserCard";
-import { ResumeBuilderCard } from "@/components/resume/ResumeBuilderCard";
-import { AtsCheckerForm } from "@/components/resume/AtsCheckerForm";
-import { DiagnosticReport } from "@/components/resume/DiagnosticReport";
-import { CoverLetterCard } from "@/components/resume/CoverLetterCard";
+import { Profile, AtsResult, ACCEPTED_TYPES } from "@/features/resume/types";
+import { ResumeParserCard } from "@/features/resume/components/ResumeParserCard";
+import { ResumeBuilderCard } from "@/features/resume/components/ResumeBuilderCard";
+import { AtsCheckerForm } from "@/features/resume/components/AtsCheckerForm";
+import { DiagnosticReport } from "@/features/resume/components/DiagnosticReport";
+import { CoverLetterCard } from "@/features/resume/components/CoverLetterCard";
 import { mergeSkills } from "@/lib/skills";
 
 export default function ResumePage() {
@@ -39,7 +39,12 @@ export default function ResumePage() {
       const data = await fetchWithAuth("/profile");
       setProfile(data);
       // Show the last saved check until a new one is run
-      if (data.lastAtsCheck?.checks) setAtsResult((prev) => prev ?? data.lastAtsCheck);
+      // Mongoose returns an empty shell ({ checks: [] }) when no check has run yet
+      if (data.lastAtsCheck?.checks?.length) {
+        setAtsResult((prev) => prev ?? data.lastAtsCheck);
+        // Refill the job description it was checked against, unless one is already typed
+        if (data.lastAtsCheck.jobDescription) setJobDescription((prev) => prev || data.lastAtsCheck.jobDescription);
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Failed to load profile.");
@@ -47,8 +52,8 @@ export default function ResumePage() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProfile();
   }, []);
 

@@ -1,7 +1,10 @@
 const express = require("express");
+const validate = require("../middleware/validate");
+const schemas = require("../validation/schemas");
 const JobApplication = require("../models/JobApplication");
 const authMiddleware = require("../middleware/auth");
 const { analyzeJobMatch } = require("../services/jobMatchService");
+const { findTerms } = require("../services/atsAnalyzer");
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -10,7 +13,8 @@ const STATUSES = ["Wishlist", "Applied", "Interviewing", "Offer", "Rejected"];
 
 // List all tracked jobs for this user
 router.get("/", async (req, res) => {
-  const jobs = await JobApplication.find({ user: req.userId }).sort({ updatedAt: -1 });
+  // Tailored resumes are full resume copies; the board only needs tailoredAt
+  const jobs = await JobApplication.find({ user: req.userId }).select("-tailoredResume").sort({ updatedAt: -1 });
   res.json(jobs);
 });
 
@@ -26,7 +30,7 @@ function formatSalary(min, max, country) {
 // Live job search (Adzuna) - MUST be before /:id routes.
 // Responds { results, source }: source "sample" means placeholder listings,
 // which the UI labels clearly so they're never mistaken for real openings.
-router.get("/search", async (req, res) => {
+router.get("/search", validate(schemas.jobSearch, "query"), async (req, res) => {
   let what = req.query.what || "";
   let where = req.query.where || "";
   const country = req.query.country || "in"; // default to India
@@ -72,7 +76,7 @@ router.get("/search", async (req, res) => {
 });
 
 // Track a new job application
-router.post("/", async (req, res) => {
+router.post("/", validate(schemas.jobCreate), async (req, res) => {
   try {
     const { company, role, jobUrl, notes, jobDescription } = req.body;
     const status = STATUSES.includes(req.body.status) ? req.body.status : "Wishlist";
@@ -102,10 +106,36 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Update a job (status, notes, dates, description, ...)
-const JOB_UPDATABLE_FIELDS = ["company", "role", "jobUrl", "status", "notes", "appliedOn", "jobDescription"];
+// One job, including its tailored resume (used by the resume builder)
+router.get("/:id", async (req, res) => {
+  try {
+    const job = await JobApplication.findOne({ _id: req.params.id, user: req.userId });
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    res.json(job);
+  } catch (err) {
+    if (err.name === "CastError") return res.status(404).json({ error: "Job not found" });
+    res.status(500).json({ error: err.message });
+  }
+});
 
-router.put("/:id", async (req, res) => {
+// Which of this job's keywords a draft resume covers - the resume builder's
+// live checklist while tailoring. Same matching as the ATS check; no AI call.
+router.post("/:id/keyword-check", validate(schemas.keywordCheck), async (req, res) => {
+  try {
+    const job = await JobApplication.findOne({ _id: req.params.id, user: req.userId });
+    if (!job) return res.status(404).json({ error: "Job not found" });
+    const terms = [...(job.missingSkills || []), ...(job.matchedSkills || [])];
+    res.json({ keywords: findTerms(req.body.text, terms) });
+  } catch (err) {
+    if (err.name === "CastError") return res.status(404).json({ error: "Job not found" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update a job (status, notes, dates, description, tailored resume, ...)
+const JOB_UPDATABLE_FIELDS = ["company", "role", "jobUrl", "status", "notes", "appliedOn", "jobDescription", "tailoredResume"];
+
+router.put("/:id", validate(schemas.jobUpdate), async (req, res) => {
   try {
     const job = await JobApplication.findOne({ _id: req.params.id, user: req.userId });
     if (!job) return res.status(404).json({ error: "Job not found" });
@@ -114,6 +144,7 @@ router.put("/:id", async (req, res) => {
     for (const field of JOB_UPDATABLE_FIELDS) {
       if (field in req.body) job[field] = req.body[field];
     }
+    if ("tailoredResume" in req.body) job.tailoredAt = req.body.tailoredResume ? new Date() : undefined;
     // Moving past Wishlist records when you applied, unless you set a date yourself
     if ("status" in req.body && req.body.status !== "Wishlist" && !job.appliedOn && !("appliedOn" in req.body)) {
       job.appliedOn = new Date();

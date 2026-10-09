@@ -3,16 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { fetchWithAuth } from "@/lib/api";
-import type { Profile } from "@/types/dashboard";
-import { HeroCard } from "@/components/dashboard/HeroCard";
-import { CareerScoreCard } from "@/components/dashboard/CareerScoreCard";
-import { AiInsightsCard } from "@/components/dashboard/AiInsightsCard";
-import { SkillsPanel } from "@/components/dashboard/SkillsPanel";
-import { GithubProfilerCard } from "@/components/dashboard/GithubProfilerCard";
-import { GithubRepositoriesCard } from "@/components/dashboard/GithubRepositoriesCard";
-import { GrowthRoadmapCard } from "@/components/dashboard/GrowthRoadmapCard";
-import { ProjectsPanel } from "@/components/dashboard/ProjectsPanel";
-import { ProfileEditForm } from "@/components/dashboard/ProfileEditForm";
+import type { Profile } from "@/features/dashboard/types";
+import { HeroCard } from "@/features/dashboard/components/HeroCard";
+import { CareerScoreCard } from "@/features/dashboard/components/CareerScoreCard";
+import { AiInsightsCard } from "@/features/dashboard/components/AiInsightsCard";
+import { SkillsPanel } from "@/features/dashboard/components/SkillsPanel";
+import { GithubProfilerCard } from "@/features/dashboard/components/GithubProfilerCard";
+import { GithubRepositoriesCard } from "@/features/dashboard/components/GithubRepositoriesCard";
+import { GrowthRoadmapCard } from "@/features/dashboard/components/GrowthRoadmapCard";
+import { ProjectsPanel } from "@/features/dashboard/components/ProjectsPanel";
+import { ProfileEditForm } from "@/features/dashboard/components/ProfileEditForm";
 import { mergeSkills } from "@/lib/skills";
 import { linkProjectsToRepos } from "@/lib/projectRepos";
 
@@ -38,6 +38,8 @@ export default function Dashboard() {
   const [eduBranch, setEduBranch] = useState("");
   const [eduCgpa, setEduCgpa] = useState("");
   const [eduYear, setEduYear] = useState("");
+  const [experienceList, setExperienceList] = useState<NonNullable<Profile["experience"]>>([]);
+  const [certificationsList, setCertificationsList] = useState<NonNullable<Profile["certifications"]>>([]);
   const [projectsList, setProjectsList] = useState<Profile["projects"]>([]);
   const [newProjTitle, setNewProjTitle] = useState("");
   const [newProjDesc, setNewProjDesc] = useState("");
@@ -55,6 +57,8 @@ export default function Dashboard() {
       // Edit the merged list so resume-extracted skills are visible and editable too.
       setSkillsText(mergeSkills(data).join(", "));
       setProjectsList(data.projects || []);
+      setExperienceList(data.experience || []);
+      setCertificationsList(data.certifications || []);
       fetchWithAuth("/auth/me").then(me => {
         setUserName(me.name || "");
         if (me.githubUsername) setGithubUsername(me.githubUsername);
@@ -94,7 +98,7 @@ export default function Dashboard() {
     try {
       const updatedProfile = await fetchWithAuth("/profile", {
         method: "PUT",
-        body: JSON.stringify({ careerGoal: careerGoal.trim(), skills, resumeExtractedSkills, education, projects: projectsList }),
+        body: JSON.stringify({ careerGoal: careerGoal.trim(), skills, resumeExtractedSkills, education, experience: experienceList, certifications: certificationsList, projects: projectsList }),
       });
       if (githubUsername) {
         await fetchWithAuth("/auth/settings", {
@@ -176,6 +180,8 @@ export default function Dashboard() {
       setCareerGoal(profile.careerGoal || "");
       setSkillsText(mergeSkills(profile).join(", "));
       setProjectsList(profile.projects || []);
+      setExperienceList(profile.experience || []);
+      setCertificationsList(profile.certifications || []);
       setNewProjTitle(""); setNewProjDesc(""); setNewProjStack(""); setNewProjRepo("");
       setEduInstitute(profile.education?.[0]?.institute || "");
       setEduDegree(profile.education?.[0]?.degree || "");
@@ -238,6 +244,10 @@ export default function Dashboard() {
           setEduCgpa={setEduCgpa}
           eduYear={eduYear}
           setEduYear={setEduYear}
+          experienceList={experienceList}
+          setExperienceList={setExperienceList}
+          certificationsList={certificationsList}
+          setCertificationsList={setCertificationsList}
           projectsList={projectsList}
           newProjTitle={newProjTitle}
           setNewProjTitle={setNewProjTitle}
