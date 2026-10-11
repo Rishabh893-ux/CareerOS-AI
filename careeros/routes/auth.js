@@ -145,7 +145,7 @@ router.post("/forgot-password", rateLimits.passwordReset, validate(schemas.forgo
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || "https://careeros-ai-phi.vercel.app";
+    const frontendUrl = process.env.FRONTEND_URL || "https://career-os-ai-ten.vercel.app";
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     if (!isEmailConfigured()) {

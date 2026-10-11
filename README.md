@@ -9,9 +9,9 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://careeros-ai-phi.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://career-os-ai-ten.vercel.app)
 
-[Live demo](https://careeros-ai-phi.vercel.app) · [Features](#features) · [How the scores work](#how-the-scores-work) · [Getting started](#getting-started) · [Architecture](#architecture)
+[Live demo](https://career-os-ai-ten.vercel.app) · [Features](#features) · [How the scores work](#how-the-scores-work) · [Getting started](#getting-started) · [Architecture](#architecture)
 
 <br/>
 
@@ -25,7 +25,7 @@ CareerOS AI brings a job seeker's whole search into one place: profile, resume, 
 
 **Scores are measured, not guessed.** Wherever a number appears, it's computed from signals the app can verify, such as keywords found in your resume or READMEs present on GitHub. AI is used for what it's good at: reading a job description, writing a summary, drafting a message. It's never used to invent a score.
 
-> **Try it without signing up:** open the [live demo](https://careeros-ai-phi.vercel.app) and choose **Try the Demo**. You'll explore a sample profile, "Alex Rivera", with tracked jobs, a GitHub analysis and a portfolio.
+> **Try it without signing up:** open the [live demo](https://career-os-ai-ten.vercel.app) and choose **Try the Demo**. You'll explore a sample profile, "Alex Rivera", with tracked jobs, a GitHub analysis and a portfolio.
 
 ---
 
